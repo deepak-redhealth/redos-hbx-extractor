@@ -1,6 +1,7 @@
 'use client';
 // components/FilterPanel.tsx
 
+import { useState } from 'react';
 import styles from './FilterPanel.module.css';
 
 interface Props {
@@ -18,10 +19,67 @@ const DATE_PRESETS = [
   { value: 'custom',    label: 'Custom Range' },
 ];
 
-const VEHICLE_TYPES = ['ALS', 'BLS', 'Ecco', 'Patient Transport'];
-const OWNERSHIP     = ['Own', 'Sathi', 'Alliance', 'Others'];
+const VEHICLE_TYPES = ['als', 'bls', 'hearse', 'neonatal'];
+const OWNERSHIP     = ['own', 'sathi', 'non-sathi', 'alliance'];
 const STATUSES      = ['COMPLETED', 'CANCELLED', 'ASSIGNED', 'DISPATCHED', 'PENDING', 'REASSIGNED'];
-const CITIES        = ['Hyderabad', 'Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata', 'Noida'];
+const CITIES        = ['Hyderabad', 'Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata', 'Noida', 'Gurugram'];
+
+// Top hospitals/sites from both databases (HBX: og.name | BQ: c.branch_name)
+const SITES = [
+  'AIG Hospital-Gachibowli, Hyderabad',
+  'AIG - Gachibowli',
+  'Apollo Hospital - Navi Mumbai',
+  'CARE Hospital - Banjara Hills',
+  'CARE Hospital - HiTech City, Hyderabad',
+  'CARE Hospital - Musheerabad',
+  'CARE Hospital - Nampally',
+  'CARE Hospital Indore',
+  'CMRI - Kolkata',
+  'Dr Rela Institute and Medical Center- Main Unit',
+  'Dr. L H Hiranandani Hospital - Mumbai',
+  'Fortis Escorts Heart Institute - Okhla',
+  'Fortis Hospital - BG Road, Bengaluru',
+  'Fortis Hospital - Shalimar Bagh, Delhi',
+  'Fortis Hospital Noida',
+  'Fortis Hospital-Hills,Mohali',
+  'Fortis Hospital-Mohali',
+  'Fortis Memorial Research Institute',
+  'Fortis Memorial Research Institute-Gurgaon',
+  'Fortis Rajan Dhall Hospital- Vasant Kunj ,Delhi',
+  'KIMS Hospital - Secunderabad',
+  'KIMS Hospital -Kondapur, Hyderabad',
+  'KIMS Sunshine - Secunderabad',
+  'KIMS Sunshine-Secunderabad,Hyderabad',
+  'Kokilaben Dhirubhai Ambani Hospital',
+  'Kokilaben Dhirubhai Ambani Hospital-Mumbai',
+  'Medanta Hospital - Lucknow',
+  'Medanta Hospital- Lucknow',
+  'Medanta Hospital- Patna',
+  'Medway Hospital (Dedicated)- Chennai',
+  'NH RNT - Kolkata',
+  'NH Super Howrah - Kolkata',
+  'Paras - kanpur',
+  'Paras Hospital - Patna',
+  'Paras Hospital- Panchkula',
+  'Red Health',
+  'Red Health- Bangalore',
+  'Red Health- Delhi NCR',
+  'Red Health- Hyderabad',
+  'Red Health-Kolkata',
+  'Regency Hospital Tower 1 - Kanpur',
+  'Regency Renal - Kanpur',
+  'Regency Tower 1 - Kanpur',
+  'Regency Tower 2 - Kanpur',
+  'Sakra World Hospital - Bangalore',
+  'Sakra World Hospital-Bengaluru',
+  'The Calcutta Medical Research Institute',
+  'Utkal - Bhubaneswar',
+  'Vijaya Hospital - Chennai',
+  'Website',
+  '911 Brand Number',
+  'Yashoda Hospital- Kaushambi, Ghaziabad',
+  'Yashoda Kaushambi',
+].sort();
 
 function set(filters: any, key: string, val: any) { return { ...filters, [key]: val }; }
 
@@ -33,6 +91,7 @@ function toggleArr(arr: string[] | undefined, val: string): string[] {
 export default function FilterPanel({ filters, onChange }: Props) {
   const f = filters;
   const isCustomDate = !f.datePreset || f.datePreset === 'custom';
+  const [siteSearch, setSiteSearch] = useState('');
 
   return (
     <div className={styles.wrap}>
@@ -143,6 +202,39 @@ export default function FilterPanel({ filters, onChange }: Props) {
               </label>
             ))}
           </div>
+        </section>
+
+        {/* ─ Site / Hospital ─ */}
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>🏥 Site / Hospital</h3>
+          <input
+            className={styles.numInput}
+            type="text"
+            placeholder="Search hospital or site name..."
+            value={siteSearch}
+            onChange={e => setSiteSearch(e.target.value)}
+            style={{ marginBottom: '8px', width: '100%' }}
+          />
+          <div className={styles.checkGroup} style={{ maxHeight: '180px', overflowY: 'auto' }}>
+            {SITES
+              .filter(s => !siteSearch || s.toLowerCase().includes(siteSearch.toLowerCase()))
+              .map(site => (
+                <label key={site} className={styles.checkRow}>
+                  <input
+                    type="checkbox"
+                    checked={(f.siteName || []).includes(site)}
+                    onChange={() => onChange(set(f, 'siteName', toggleArr(f.siteName, site)))}
+                    className={styles.check}
+                  />
+                  <span className={styles.checkLabel}>{site}</span>
+                </label>
+              ))}
+          </div>
+          {(f.siteName?.length ?? 0) > 0 && (
+            <button className={styles.clearBtn} onClick={() => onChange(set(f, 'siteName', []))}>
+              Clear ({f.siteName?.length})
+            </button>
+          )}
         </section>
 
         {/* ─ City ─ */}
