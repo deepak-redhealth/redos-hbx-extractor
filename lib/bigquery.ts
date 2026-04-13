@@ -9,9 +9,11 @@ async function getClient() {
   const { BigQuery } = await import('@google-cloud/bigquery');
 
   const credBase64 = process.env.BIGQUERY_CREDENTIALS_BASE64;
+  const projectId = process.env.BIGQUERY_PROJECT_ID || 'redos-prod';
   if (credBase64) {
     const creds = JSON.parse(Buffer.from(credBase64, 'base64').toString('utf8'));
-    bqClient = new BigQuery({ credentials: creds, projectId: creds.project_id });
+    // authorized_user credentials don't have project_id - always use env var
+    bqClient = new BigQuery({ credentials: creds, projectId });
   } else {
     bqClient = new BigQuery({
       projectId: process.env.BIGQUERY_PROJECT_ID,
