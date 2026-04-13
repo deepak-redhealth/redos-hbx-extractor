@@ -1,0 +1,130 @@
+/* app/dashboard/dashboard.module.css — Red Health Light Theme */
+
+.page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
+
+/* ── Nav ── */
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 56px; min-height: 56px;
+  background: #fff; border-bottom: 2px solid var(--red);
+  flex-shrink: 0; gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.navLeft  { display: flex; align-items: center; gap: 16px; }
+.navRight { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+
+.navLogo { font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
+.navLogo strong { color: var(--red); }
+
+.sourceToggle { display: flex; gap: 4px; background: var(--bg3); border-radius: 8px; padding: 3px; border: 1px solid var(--border); }
+.sourceBtn {
+  padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 500;
+  color: var(--text2); background: transparent; display: flex; align-items: center; gap: 6px;
+  transition: all .15s;
+}
+.sourceBtn:hover { color: var(--text); background: var(--bg4); }
+.sourceBtnActive { background: #fff !important; color: var(--text) !important; box-shadow: var(--shadow); font-weight: 600; }
+.sourceDot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.colCount {
+  padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: var(--red-light); color: var(--red-dark); border: 1px solid #fecaca;
+}
+
+.buildBtn, .execBtn, .exportBtn {
+  padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; gap: 6px; transition: all .15s; white-space: nowrap;
+}
+.buildBtn {
+  background: var(--bg3); color: var(--text2); border: 1px solid var(--border);
+}
+.buildBtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.execBtn {
+  background: var(--red); color: #fff; box-shadow: var(--shadow-red);
+}
+.execBtn:hover:not(:disabled) { background: var(--red-dark); }
+.exportGroup { display: flex; gap: 4px; }
+.exportBtn {
+  background: var(--green-light); color: var(--green); border: 1px solid #bbf7d0;
+}
+.exportBtn:hover:not(:disabled) { background: #dcfce7; }
+
+.buildBtn:disabled, .execBtn:disabled, .exportBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.resetAllBtn {
+  padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  background: var(--orange-light); color: var(--orange); border: 1px solid #fed7aa;
+  transition: all .15s; white-space: nowrap;
+}
+.resetAllBtn:hover { background: #ffedd5; }
+
+.userBadge {
+  display: flex; align-items: center; gap: 6px; padding: 5px 12px;
+  background: var(--bg3); border-radius: 8px; font-size: 12px; color: var(--text2);
+  border: 1px solid var(--border);
+}
+.logoutBtn {
+  background: none; color: var(--text3); font-size: 11px;
+  text-decoration: underline; padding: 0; margin-left: 4px;
+}
+.logoutBtn:hover { color: var(--red); }
+
+.spinner {
+  width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: currentColor; border-radius: 50%;
+  animation: spin 0.7s linear infinite; flex-shrink: 0;
+}
+
+/* ── Banners ── */
+.errorBanner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px; background: var(--red-light); border-bottom: 1px solid #fecaca;
+  color: var(--red-dark); font-size: 13px; flex-shrink: 0;
+}
+.errorBanner button { background: none; color: var(--red-dark); font-size: 16px; padding: 0 4px; }
+
+.warnBanner {
+  padding: 8px 20px; background: var(--orange-light); border-bottom: 1px solid #fed7aa;
+  color: var(--orange); font-size: 12px; flex-shrink: 0;
+}
+
+/* ── Filter Bar ── */
+.filterBar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 20px; background: #fff; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.filterBarLabel { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+.filterTag {
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  background: var(--red-light); color: var(--red-dark); border: 1px solid #fecaca;
+}
+.aiTag {
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: var(--purple-light); color: var(--purple); border: 1px solid #ddd6fe;
+}
+
+/* ── Tab Bar ── */
+.tabBar {
+  display: flex; gap: 2px; padding: 0 16px;
+  background: #fff; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.tab {
+  padding: 10px 18px; border-radius: 0;
+  font-size: 13px; font-weight: 500; color: var(--text3);
+  background: transparent; display: flex; align-items: center; gap: 6px;
+  border-bottom: 3px solid transparent; transition: all .15s; margin-bottom: -1px;
+}
+.tab:hover:not(:disabled) { color: var(--text2); background: var(--bg3); }
+.tabActive { color: var(--red) !important; background: transparent !important; border-bottom-color: var(--red) !important; font-weight: 600; }
+.tabDisabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Main ── */
+.main { flex: 1; overflow-y: auto; overflow-x: hidden; background: var(--bg); }
+
+.adminBtn {
+  padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  background: var(--red-light); color: var(--red-dark); border: 1px solid #fecaca;
+  text-decoration: none; transition: all .15s; white-space: nowrap;
+}
+.adminBtn:hover { background: var(--red-mid); }

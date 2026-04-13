@@ -1,0 +1,94 @@
+/* app/login.module.css — Red Health Light Theme */
+
+.page { display: flex; min-height: 100vh; background: var(--bg); }
+
+/* ─── Left Brand Panel ──────────────────────────────── */
+.brand {
+  flex: 1.1;
+  background: linear-gradient(145deg, #c1121f 0%, #e63946 50%, #ff4d5e 100%);
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; padding: 60px;
+}
+.brandInner { position: relative; z-index: 2; max-width: 480px; }
+
+.logo { display: flex; align-items: center; gap: 12px; margin-bottom: 48px; }
+.logoIcon { font-size: 36px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2)); }
+.logoText { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+
+.headline { font-size: 48px; font-weight: 700; line-height: 1.15; letter-spacing: -1.5px; color: #fff; margin-bottom: 20px; }
+.highlight { color: rgba(255,255,255,0.85); }
+
+.sub { font-size: 16px; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 32px; }
+
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 48px; }
+.pill {
+  padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  background: rgba(255,255,255,0.15); color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  backdrop-filter: blur(4px);
+}
+
+.decorGrid {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;
+  position: absolute; bottom: -20px; right: -30px;
+  opacity: 0.15; width: 280px;
+}
+.decorCell {
+  width: 36px; height: 36px; border-radius: 6px;
+  background: #fff; animation: pulse 2.5s ease-in-out infinite;
+}
+
+.brand::before {
+  content: ''; position: absolute;
+  width: 500px; height: 500px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  top: -100px; right: -100px; pointer-events: none;
+}
+
+/* ─── Right Form Panel ──────────────────────────────── */
+.formPanel {
+  flex: 0.9; display: flex; align-items: center; justify-content: center;
+  padding: 60px 40px; background: #fff;
+  box-shadow: -4px 0 32px rgba(0,0,0,0.06);
+}
+
+.form { width: 100%; max-width: 380px; animation: fadeIn 0.3s ease both; }
+
+.formTitle { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; margin-bottom: 6px; }
+.formSub { color: var(--text3); font-size: 14px; margin-bottom: 36px; }
+
+.field { margin-bottom: 20px; }
+.label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.inputWrap { position: relative; }
+.inputIcon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
+.input {
+  width: 100%; padding: 12px 14px 12px 42px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: 14px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(230,57,70,0.1); }
+.input::placeholder { color: var(--text3); }
+
+.error {
+  background: var(--red-light); border: 1px solid #fecaca;
+  color: var(--red-dark); padding: 10px 14px; border-radius: 8px;
+  font-size: 13px; margin-bottom: 16px;
+}
+
+.btn {
+  width: 100%; padding: 13px;
+  background: var(--red); color: #fff;
+  font-size: 15px; font-weight: 600; border-radius: var(--radius);
+  transition: background .2s, transform .1s, box-shadow .2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 8px; box-shadow: var(--shadow-red);
+}
+.btn:hover:not(:disabled) { background: var(--red-dark); box-shadow: 0 4px 20px rgba(230,57,70,0.3); }
+.btn:active { transform: scale(0.99); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+.footNote { text-align: center; color: var(--text3); font-size: 12px; margin-top: 24px; }

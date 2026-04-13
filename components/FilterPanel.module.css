@@ -1,0 +1,52 @@
+/* components/FilterPanel.module.css — Red Health Light Theme */
+
+.wrap { padding: 20px; animation: fadeIn .2s ease; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 1200px; }
+
+.section { background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow); }
+.sectionTitle { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
+
+.field { margin-bottom: 12px; }
+.label { display: block; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+
+.radioGroup { display: flex; flex-direction: column; gap: 6px; }
+.radioCard { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: all .15s; }
+.radioCard:hover { border-color: var(--red); background: var(--red-light); }
+.radioCardActive { border-color: var(--red) !important; background: var(--red-light) !important; }
+.radioCard input { accent-color: var(--red); }
+.radioLabel { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+.radioDesc { font-size: 11px; color: var(--text3); }
+
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presetBtn { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: var(--bg3); color: var(--text2); border: 1.5px solid var(--border); transition: all .15s; }
+.presetBtn:hover { border-color: var(--red); color: var(--red); }
+.presetBtnActive { background: var(--red-light); color: var(--red-dark); border-color: #fca5a5; font-weight: 600; }
+
+.dateRange { display: flex; gap: 8px; }
+.dateInput { width: 100%; padding: 8px 10px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text); font-size: 12px; }
+.dateInput:focus { border-color: var(--red); }
+
+.checkGroup { display: flex; flex-direction: column; gap: 4px; }
+.checkRow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.checkRow:hover { background: var(--red-light); }
+.check { accent-color: var(--red); width: 14px; height: 14px; cursor: pointer; }
+.checkLabel { font-size: 13px; color: var(--text); }
+
+.clearBtn { margin-top: 8px; padding: 4px 10px; background: none; color: var(--text3); border: 1px solid var(--border); border-radius: 6px; font-size: 11px; }
+.clearBtn:hover { color: var(--red); border-color: #fca5a5; }
+
+.rangeRow { display: flex; align-items: center; gap: 8px; }
+.rangeSep { color: var(--text3); padding-top: 20px; flex-shrink: 0; }
+.numInput { width: 100%; padding: 8px 10px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; }
+.numInput:focus { border-color: var(--red); }
+
+.switchGroup { display: flex; flex-direction: column; gap: 10px; }
+.switchRow { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.toggle { width: 36px; height: 20px; background: var(--bg4); border-radius: 10px; position: relative; transition: background .2s; cursor: pointer; border: 1.5px solid var(--border2); flex-shrink: 0; }
+.toggleOn { background: var(--red); border-color: var(--red); }
+.toggleThumb { width: 14px; height: 14px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggleOn .toggleThumb { left: 18px; }
+.switchLabel { font-size: 13px; color: var(--text); }
+
+.resetBtn { width: 100%; padding: 10px; background: var(--bg3); color: var(--text2); border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; transition: all .15s; }
+.resetBtn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }

@@ -1,0 +1,24 @@
+/* components/QueryPreview.module.css — Red Health Light Theme */
+.wrap { padding: 20px; max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; animation: fadeIn .2s; }
+.filterSummary { background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow); }
+.sumTitle { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px; }
+.filterTags { display: flex; flex-wrap: wrap; gap: 6px; }
+.filterTag { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; background: var(--red-light); color: var(--red-dark); border: 1px solid #fecaca; }
+.aiTag { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: var(--purple-light); color: var(--purple); border: 1px solid #ddd6fe; }
+.sqlCard { background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+.sqlHeader { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg3); }
+.sqlTitle { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
+.sqlDot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+.sqlActions { display: flex; gap: 8px; }
+.copyBtn { padding: 6px 14px; background: #fff; color: var(--text2); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 500; transition: all .15s; }
+.copyBtn:hover { color: var(--text); }
+.execBtn { padding: 7px 16px; background: var(--red); color: #fff; border-radius: 8px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow-red); }
+.execBtn:hover:not(:disabled) { background: var(--red-dark); }
+.execBtn:disabled { opacity: .45; cursor: not-allowed; }
+.spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+.sqlScroll { max-height: 520px; overflow: auto; }
+.sqlCode { padding: 20px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: #1e293b; white-space: pre; background: #f8fafc; }
+.statsRow { display: flex; gap: 12px; }
+.stat { flex: 1; background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
+.statLabel { font-size: 12px; color: var(--text3); }
+.statVal { font-size: 15px; font-weight: 700; color: var(--text); }

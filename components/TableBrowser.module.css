@@ -1,0 +1,40 @@
+/* TableBrowser.module.css */
+.wrap { padding: 20px; animation: fadeIn .2s; }
+.header { margin-bottom: 16px; }
+.title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.sub { font-size: 13px; color: var(--text3); }
+
+.toolbar { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.search { width: 100%; max-width: 400px; padding: 9px 14px; background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 13px; }
+.search:focus { border-color: var(--red); }
+
+.cats { display: flex; flex-wrap: wrap; gap: 6px; }
+.catBtn { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: var(--bg3); color: var(--text2); border: 1.5px solid var(--border); transition: all .15s; display: flex; align-items: center; gap: 5px; }
+.catBtn:hover { border-color: var(--red); color: var(--red); }
+.catBtnActive { background: var(--red-light); color: var(--red-dark); border-color: #fca5a5; }
+.catCount { font-size: 10px; background: var(--bg4); padding: 1px 5px; border-radius: 10px; color: var(--text3); }
+
+.tableGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.tableCard { background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; box-shadow: var(--shadow); transition: border-color .15s; }
+.tableCard:hover { border-color: var(--border2); }
+.tableCardCore { border-left: 3px solid var(--red); }
+
+.tableTop { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+.tableLeft { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.categoryIcon { font-size: 18px; flex-shrink: 0; margin-top: 2px; }
+.tableName { font-size: 14px; font-weight: 600; color: var(--text); background: none; padding: 0; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.tableName:hover { color: var(--red); }
+.copyHint { font-size: 11px; color: var(--text3); }
+.copiedBadge { font-size: 11px; color: var(--green); font-weight: 600; }
+.tableAlias { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.tableAlias code { font-family: var(--mono); background: var(--bg3); padding: 1px 5px; border-radius: 3px; }
+.tableRight { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.coreBadge { font-size: 10px; font-weight: 700; background: var(--red-light); color: var(--red-dark); border: 1px solid #fca5a5; padding: 2px 7px; border-radius: 10px; }
+
+.tableDesc { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 8px; }
+.joinKey { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.joinLabel { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; flex-shrink: 0; }
+.joinCode { font-family: var(--mono); font-size: 11px; color: var(--accent); background: var(--accent-light); padding: 2px 6px; border-radius: 4px; }
+.fullPath { font-family: var(--mono); font-size: 10px; color: var(--text3); word-break: break-all; }
+
+.empty { text-align: center; padding: 40px; color: var(--text3); }

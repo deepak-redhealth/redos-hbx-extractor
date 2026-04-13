@@ -1,0 +1,56 @@
+/* components/ColumnSelector.module.css — Red Health Light Theme */
+
+.wrap { padding: 20px; max-width: 960px; margin: 0 auto; animation: fadeIn .2s ease; }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+
+.searchBox { position: relative; flex: 1; min-width: 200px; max-width: 360px; display: flex; align-items: center; }
+.searchIcon { position: absolute; left: 12px; color: var(--text3); font-size: 16px; pointer-events: none; }
+.searchInput {
+  width: 100%; padding: 9px 12px 9px 36px;
+  background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius);
+  color: var(--text); font-size: 13px; transition: border-color .2s, box-shadow .2s;
+}
+.searchInput:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(230,57,70,0.08); }
+.searchInput::placeholder { color: var(--text3); }
+.clearSearch { position: absolute; right: 10px; background: none; color: var(--text3); font-size: 12px; padding: 2px; }
+.clearSearch:hover { color: var(--red); }
+
+.toolbarActions { display: flex; align-items: center; gap: 8px; }
+.actionBtn {
+  padding: 7px 14px; background: #fff; color: var(--text2);
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  font-size: 12px; font-weight: 500; transition: all .15s;
+}
+.actionBtn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+
+.selectedCount {
+  padding: 7px 14px; border-radius: var(--radius); font-size: 12px; font-weight: 600;
+  background: var(--red-light); color: var(--red-dark); border: 1px solid #fecaca;
+}
+
+/* Group */
+.groupList { display: flex; flex-direction: column; gap: 8px; }
+.group { background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+.groupHeader { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; transition: background .15s; }
+.groupHeader:hover { background: var(--bg3); }
+.groupHeaderLeft { display: flex; align-items: center; gap: 10px; }
+.groupChevron { color: var(--text3); font-size: 10px; width: 12px; }
+.groupIcon    { font-size: 16px; }
+.groupLabel   { font-size: 14px; font-weight: 600; color: var(--text); }
+.groupCount   { font-size: 11px; font-weight: 600; color: var(--text3); background: var(--bg3); padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); }
+.groupCheckbox { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); cursor: pointer; }
+.groupCheckbox input { cursor: pointer; accent-color: var(--red); }
+
+/* Column rows */
+.colList { border-top: 1px solid var(--border); padding: 8px; display: flex; flex-direction: column; gap: 2px; background: #fafbfc; }
+.colRow { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: background .12s; }
+.colRow:hover { background: var(--red-light); }
+.colRowSelected { background: var(--red-light); border: 1px solid #fecaca; }
+.colCheck { accent-color: var(--red); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.colInfo  { flex: 1; min-width: 0; }
+.colLabel { font-size: 13px; color: var(--text); display: block; }
+.colDesc  { font-size: 11px; color: var(--text3); display: block; margin-top: 2px; }
+.colMeta  { display: flex; gap: 4px; flex-shrink: 0; }
+
+.skeletonGroup { margin-bottom: 16px; }

@@ -1,0 +1,50 @@
+/* components/ResultsTable.module.css — Red Health Light Theme */
+
+.wrap { display: flex; flex-direction: column; height: 100%; padding: 16px 20px; gap: 12px; animation: fadeIn .2s; }
+
+.statsBar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 12px 16px; box-shadow: var(--shadow); }
+.stats { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.stat { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); }
+.statIcon { color: var(--text3); }
+.statWarn { font-size: 12px; color: var(--orange); background: var(--orange-light); border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 20px; }
+.exportBtns { display: flex; gap: 8px; }
+.exportBtn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all .15s; }
+.exportXlsx { background: var(--green-light); color: var(--green); border: 1.5px solid #bbf7d0; }
+.exportXlsx:hover:not(:disabled) { background: #dcfce7; }
+.exportCsv { background: var(--accent-light); color: var(--accent); border: 1.5px solid #bfdbfe; }
+.exportCsv:hover:not(:disabled) { background: #dbeafe; }
+.exportBtn:disabled { opacity: .45; cursor: not-allowed; }
+.spinner { width: 12px; height: 12px; border: 2px solid rgba(0,0,0,.15); border-top-color: currentColor; border-radius: 50%; animation: spin .7s linear infinite; }
+
+.tableWrap { flex: 1; overflow: auto; background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+
+.indexTh { background: var(--bg3); color: var(--text3); padding: 10px 8px; border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 10; text-align: center; font-size: 11px; min-width: 40px; }
+.th { background: var(--bg3); color: var(--text2); padding: 10px 12px; border-bottom: 2px solid var(--border); white-space: nowrap; position: sticky; top: 0; z-index: 10; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+
+.tr:hover td { background: var(--red-light) !important; }
+.tr:nth-child(even) td { background: #fafafa; }
+
+.indexCell { padding: 8px; text-align: center; color: var(--text3); font-size: 11px; border-bottom: 1px solid var(--border); min-width: 40px; background: #fafafa; }
+.td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+
+.cellNull      { color: var(--text3) !important; font-style: italic; }
+.cellNum       { color: var(--accent) !important; font-family: var(--mono); text-align: right; }
+.cellTrue      { color: var(--green) !important; font-weight: 600; }
+.cellFalse     { color: var(--red) !important; }
+.cellCompleted { color: var(--green) !important; font-weight: 600; }
+.cellCancelled { color: var(--red) !important; }
+
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; gap: 12px; color: var(--text3); }
+.emptyIcon { font-size: 48px; }
+.empty h3 { font-size: 16px; color: var(--text2); }
+.empty p  { font-size: 13px; }
+
+.cellInProgress { color: #2563eb !important; font-weight: 600; }
+.cellDisputed   { color: var(--orange) !important; font-weight: 600; }
+
+/* Right-align numeric cells */
+.cellNum { color: var(--accent) !important; font-family: var(--mono); text-align: right; }
+
+/* Header alignment for numeric columns */
+.thNum { text-align: right !important; }

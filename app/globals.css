@@ -1,0 +1,106 @@
+/* app/globals.css — Red Health Light Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* ─── Brand Colors ─────────────────────────────────── */
+  --red:          #e63946;
+  --red-dark:     #c1121f;
+  --red-soft:     #f87171;
+  --red-light:    #fff1f2;
+  --red-mid:      #fee2e2;
+
+  /* ─── Backgrounds ──────────────────────────────────── */
+  --bg:           #f8f9fb;
+  --bg2:          #ffffff;
+  --bg3:          #f1f3f7;
+  --bg4:          #e9ecf2;
+
+  /* ─── Borders ──────────────────────────────────────── */
+  --border:       #e2e6ef;
+  --border2:      #c9d0df;
+
+  /* ─── Text ─────────────────────────────────────────── */
+  --text:         #111827;
+  --text2:        #4b5563;
+  --text3:        #9ca3af;
+
+  /* ─── Accents ──────────────────────────────────────── */
+  --accent:       #2563eb;
+  --accent-light: #eff6ff;
+  --green:        #16a34a;
+  --green-light:  #f0fdf4;
+  --orange:       #ea580c;
+  --orange-light: #fff7ed;
+  --purple:       #7c3aed;
+  --purple-light: #f5f3ff;
+
+  /* ─── Typography ───────────────────────────────────── */
+  --font:         'Inter', sans-serif;
+  --mono:         'JetBrains Mono', monospace;
+
+  /* ─── Radii & Shadows ──────────────────────────────── */
+  --radius:       8px;
+  --radius-lg:    12px;
+  --shadow:       0 1px 4px rgba(0,0,0,0.08), 0 2px 12px rgba(0,0,0,0.05);
+  --shadow-lg:    0 4px 24px rgba(0,0,0,0.10);
+  --shadow-red:   0 2px 12px rgba(230,57,70,0.15);
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg3); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #aab0bf; }
+
+::selection { background: rgba(230,57,70,0.15); }
+
+button { font-family: var(--font); cursor: pointer; border: none; outline: none; }
+input, select, textarea { font-family: var(--font); outline: none; }
+
+/* ─── Animations ─────────────────────────────────────── */
+@keyframes fadeIn  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+@keyframes pulse   { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+.fade-in  { animation: fadeIn .2s ease both; }
+.slide-in { animation: slideIn .18s ease both; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+}
+
+/* ─── Badges ─────────────────────────────────────────── */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-red    { background: var(--red-light); color: var(--red-dark); border: 1px solid #fecaca; }
+.badge-blue   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-green  { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-orange { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.badge-purple { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+.badge-gray   { background: #f9fafb; color: #374151; border: 1px solid #e5e7eb; }
+
+/* ─── Tooltips ───────────────────────────────────────── */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--text); color: #fff;
+  padding: 4px 10px; border-radius: 6px; font-size: 11px; white-space: nowrap;
+  pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 100;
+}
+[data-tooltip]:hover::after { opacity: 1; }
