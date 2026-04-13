@@ -124,7 +124,19 @@ CRITICAL RULES:
 9. City codes in DB (not full names): HYD=Hyderabad, BLR=Bangalore, CHN/MAA=Chennai, BOM=Mumbai, DEL/NCR=Delhi, PNQ=Pune, CCU=Kolkata, NOI=Noida, GGN=Gurugram
    Always use UPPER(COALESCE(FULFILLMENT_CITY, META_CITY)) for city filter
 
-10. DATABASE ROUTING — CRITICAL BUSINESS RULE:
+10. PATIENT DATA IN BigQuery (RedOS):
+    Table: 'redos-prod.stg_rdp.stg_order' — JOIN to fact_order on order_id
+    Key columns:
+    - requested_for_name → patient_name
+    - requested_by_name  → attender_name
+    - requested_by_mobile → attender_mobile
+    - requested_for_mobile → patient_mobile
+    - requested_for_age, requested_for_gender
+    - mobile → caller_mobile
+    Price override: CTE using UNNEST(fo.paymentUpdationDetails) AS p → JSON_VALUE(p.comment)
+    Also in fact_order: reports_order_source_name, order_source_platform, bth_slip_url, ip_signed_copy_url
+
+11. DATABASE ROUTING — CRITICAL BUSINESS RULE:
     - BigQuery (RedOS): ONLY has data UP TO Sep 30, 2025
     - Snowflake (HBX): ONLY has data FROM Oct 1, 2025 onwards
     - Overlap: Jul 15 – Sep 30, 2025 (both available)

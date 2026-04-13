@@ -249,6 +249,56 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
     description: 'INBOUND / OUTBOUND / TRANSFER / INTERNAL_TRANSFER / LAMA/DAMA',
     defaultSelected: true },
 
+  // ─── PATIENT (BigQuery via stg_rdp.stg_order JOIN) ────────────────────────
+  // Source: LEFT JOIN `redos-prod.stg_rdp.stg_order` s ON s.order_id = fo.order_id
+  { id: 'bq_patient_name', label: 'Patient Name', group: 'patient', source: 'redos',
+    redosExpr: 's.requested_for_name AS patient_name',
+    description: 'From stg_order.requested_for_name' },
+
+  { id: 'bq_attender_name', label: 'Attender Name', group: 'patient', source: 'redos',
+    redosExpr: 's.requested_by_name AS attender_name',
+    description: 'From stg_order.requested_by_name' },
+
+  { id: 'bq_attender_mobile', label: 'Attender Mobile', group: 'patient', source: 'redos',
+    redosExpr: 's.requested_by_mobile AS attender_mobile',
+    description: 'From stg_order.requested_by_mobile' },
+
+  { id: 'bq_patient_mobile', label: 'Patient Mobile', group: 'patient', source: 'redos',
+    redosExpr: 's.requested_for_mobile AS patient_mobile',
+    description: 'From stg_order.requested_for_mobile' },
+
+  { id: 'bq_patient_age', label: 'Patient Age', group: 'patient', source: 'redos',
+    redosExpr: 's.requested_for_age AS patient_age',
+    description: 'From stg_order.requested_for_age' },
+
+  { id: 'bq_patient_gender', label: 'Patient Gender', group: 'patient', source: 'redos',
+    redosExpr: 's.requested_for_gender AS patient_gender',
+    description: 'From stg_order.requested_for_gender' },
+
+  { id: 'bq_caller_mobile', label: 'Caller Mobile', group: 'patient', source: 'redos',
+    redosExpr: 's.mobile AS caller_mobile',
+    description: 'From stg_order.mobile (caller who placed booking)' },
+
+  { id: 'price_override_comments', label: 'Price Override Comments', group: 'finance', source: 'redos',
+    redosExpr: "STRING_AGG(COALESCE(JSON_VALUE(p.comment), ''), ', ') AS price_override_comments",
+    description: 'Requires paymentUpdationDetails unnest CTE' },
+
+  { id: 'reports_order_source_name', label: 'Order Source Name', group: 'trip', source: 'redos',
+    redosExpr: 'fo.reports_order_source_name AS reports_order_source_name',
+    description: 'Hospital/source name as per reports' },
+
+  { id: 'order_source_platform', label: 'Source Platform', group: 'trip', source: 'redos',
+    redosExpr: 'fo.order_source_platform AS order_source_platform',
+    description: 'Platform from which order was placed (app, web, call etc.)' },
+
+  { id: 'bth_slip_url', label: 'BTH Slip URL', group: 'finance', source: 'redos',
+    redosExpr: 'fo.bth_slip_url AS bth_slip_url',
+    description: 'Bill to hospital slip URL' },
+
+  { id: 'ip_signed_copy_url', label: 'IP Signed Copy URL', group: 'patient', source: 'redos',
+    redosExpr: 'fo.ip_signed_copy_url AS ip_signed_copy_url',
+    description: 'Inpatient signed copy document URL' },
+
   // ─── PATIENT ─────────────────────────────────────────────────────────────────
   // ── Caller Info (HBX only — not available in BigQuery) ──
   { id: 'caller_name', label: 'Caller Name', group: 'patient', source: 'hbx',
