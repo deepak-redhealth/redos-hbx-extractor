@@ -356,26 +356,6 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
   { id: 'wp_dropoff_lng', label: 'Drop-off Longitude', group: 'patient', source: 'redos',
     redosExpr: 'fo.wp_dropoff_long AS dropoff_lng' },
 
-];
-
-  { id: 'patient_mobile', label: 'Patient Mobile', group: 'patient', source: 'hbx',
-    hbxExpr: 'fo.META_PATIENT_MOBILE AS patient_mobile' },
-
-  { id: 'patient_age', label: 'Patient Age', group: 'patient', source: 'hbx',
-    hbxExpr: 'fo.META_PATIENT_AGE AS patient_age' },
-
-  { id: 'patient_gender', label: 'Patient Gender', group: 'patient', source: 'hbx',
-    hbxExpr: 'fo.META_PATIENT_GENDER AS patient_gender' },
-
-  { id: 'medical_symptoms', label: 'Medical Symptoms', group: 'patient', source: 'hbx',
-    hbxExpr: 'fo.META_MEDICAL_SYMPTOMS AS medical_symptoms' },
-
-  { id: 'fulfillment_pickup_lat', label: 'Pickup Latitude', group: 'patient', source: 'hbx',
-    hbxExpr: 'fo.FULFILLMENT_PICKUP_LATITUDE AS pickup_lat' },
-
-  { id: 'fulfillment_pickup_lng', label: 'Pickup Longitude', group: 'patient', source: 'hbx',
-    hbxExpr: 'fo.FULFILLMENT_PICKUP_LONGITUDE AS pickup_lng' },
-
   // ─── PATIENT (BigQuery / RedOS) ───────────────────────────────────────────
   { id: 'ip_patient_number', label: 'IP Patient Number', group: 'patient', source: 'redos',
     redosExpr: 'fo.ipPatientNumber AS ip_patient_number',
