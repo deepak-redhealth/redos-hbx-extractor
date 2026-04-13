@@ -1,31 +1,17 @@
 // lib/bigquery.ts — BigQuery (RedOS) connector
-
 let bqClient: any = null;
 
 async function getClient() {
   if (bqClient) return bqClient;
-
   const { BigQuery } = await import('@google-cloud/bigquery');
-
-  // Always explicitly set projectId — never let SDK auto-detect
-  // (auto-detect can pick up wrong env vars like SNOWFLAKE_DATABASE)
-  const projectId = process.env.BIGQUERY_PROJECT_ID || 'redos-prod';
+  const projectId = 'redos-prod';
   const credBase64 = process.env.BIGQUERY_CREDENTIALS_BASE64;
-
   if (credBase64) {
     const creds = JSON.parse(Buffer.from(credBase64, 'base64').toString('utf8'));
     bqClient = new BigQuery({ projectId, credentials: creds });
   } else {
-    // Fallback: individual env vars
-    bqClient = new BigQuery({
-      projectId,
-      credentials: {
-        client_email: process.env.BIGQUERY_CLIENT_EMAIL,
-        private_key: process.env.BIGQUERY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-    });
+    bqClient = new BigQuery({ projectId });
   }
-
   return bqClient;
 }
 
