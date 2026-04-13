@@ -264,6 +264,67 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
   { id: 'fulfillment_pickup_lng', label: 'Pickup Longitude', group: 'patient', source: 'hbx',
     hbxExpr: 'fo.FULFILLMENT_PICKUP_LONGITUDE AS pickup_lng' },
 
+  // ─── PATIENT (BigQuery / RedOS) ───────────────────────────────────────────
+  { id: 'ip_patient_number', label: 'IP Patient Number', group: 'patient', source: 'redos',
+    redosExpr: 'fo.ipPatientNumber AS ip_patient_number',
+    description: 'In-patient registration number' },
+
+  { id: 'medical_reason', label: 'Medical Reason / Symptoms', group: 'patient', source: 'redos',
+    redosExpr: 'fo.requested_for_medical_issue_reason_str AS medical_reason',
+    description: 'Chief complaint / medical reason for trip' },
+
+  { id: 'is_emergency', label: 'Is Emergency Case', group: 'patient', source: 'redos',
+    redosExpr: 'fo.is_emergency_case AS is_emergency' },
+
+  { id: 'pickup_address', label: 'Pickup Address', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_pickup_address_location AS pickup_address',
+    description: 'Full pickup address' },
+
+  { id: 'dropoff_address', label: 'Drop-off Address', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_dropoff_address_location AS dropoff_address',
+    description: 'Full drop-off / destination address' },
+
+  { id: 'dropoff_entity', label: 'Drop-off Hospital / Entity', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_dropoff_report_entity AS dropoff_entity',
+    description: 'Hospital or entity name at drop-off' },
+
+  { id: 'pickup_entity', label: 'Pickup Hospital / Entity', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_pickup_report_entity AS pickup_entity',
+    description: 'Hospital or entity name at pickup' },
+
+  { id: 'patient_pickup_eta_min', label: 'Patient Pickup ETA (min)', group: 'patient', source: 'redos',
+    redosExpr: 'ROUND(fo.patient_pickup_eta / 60, 1) AS patient_pickup_eta_min',
+    description: 'Estimated time to reach patient (minutes)', transform: 'none' },
+
+  { id: 'patient_dropoff_eta_min', label: 'Patient Drop ETA (min)', group: 'patient', source: 'redos',
+    redosExpr: 'ROUND(fo.patient_dropoff_eta / 60, 1) AS patient_dropoff_eta_min',
+    description: 'Estimated time to reach destination (minutes)', transform: 'none' },
+
+  { id: 'patient_handover_at_ist', label: 'Patient Handover Time (IST)', group: 'patient', source: 'redos',
+    redosExpr: "FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', TIMESTAMP_MILLIS(fo.patient_handover_at), 'Asia/Kolkata') AS patient_handover_at_ist",
+    description: 'Time patient was handed over at destination', transform: 'ist' },
+
+  { id: 'assigned_paramedic', label: 'Assigned Paramedic', group: 'patient', source: 'redos',
+    redosExpr: 'fo.assigned_paramedic_username AS assigned_paramedic' },
+
+  { id: 'assigned_pilot', label: 'Assigned Pilot / Driver', group: 'patient', source: 'redos',
+    redosExpr: 'fo.assigned_pilot_username AS assigned_pilot' },
+
+  { id: 'patient_care_form', label: 'Patient Care Form Uploaded', group: 'patient', source: 'redos',
+    redosExpr: 'fo.is_patient_care_form_uploaded AS patient_care_form' },
+
+  { id: 'wp_pickup_lat', label: 'Pickup Latitude', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_pickup_lat AS pickup_lat' },
+
+  { id: 'wp_pickup_lng', label: 'Pickup Longitude', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_pickup_long AS pickup_lng' },
+
+  { id: 'wp_dropoff_lat', label: 'Drop-off Latitude', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_dropoff_lat AS dropoff_lat' },
+
+  { id: 'wp_dropoff_lng', label: 'Drop-off Longitude', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_dropoff_long AS dropoff_lng' },
+
 ];
 
 export const COLUMN_GROUPS: Record<string, { label: string; icon: string; color: string }> = {
