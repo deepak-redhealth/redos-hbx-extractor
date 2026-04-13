@@ -25,6 +25,7 @@ export interface UIFilters {
   excludeTestCases?: boolean;
   createdByEmail?: string;
   countOnly?: boolean;
+  siteName?: string[];
 }
 
 export interface QueryBuilderInput {
@@ -227,6 +228,16 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     conditions.push('UPPER(fo.city) IN (' + cityVals.map(v => "'" + v + "'").join(', ') + ')');
     appliedFilters.push('City: ' + cities.join(', ') + ' (' + cityVals.join('/') + ')');
   }
+  // Site / Hospital filter — joins BLADE_ORGANIZATION_ENTITIES_NEW_FLATTENED
+  const siteNames = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
+  if (siteNames?.length) {
+    baseConditions.push("og.name IN (" + siteNames.map((s: string) => "'" + s.replace(/'/g, "\'") + "'").join(', ') + ")");
+    appliedFilters.push('Site: ' + siteNames.join(', '));
+    // Force org join
+    if (!optionalJoins.some((j: string) => j.includes('BLADE_ORGANIZATION'))) {
+      optionalJoins.push('LEFT JOIN BLADE.CORE.BLADE_ORGANIZATION_ENTITIES_NEW_FLATTENED og ON fo.META_SITE_ID = og.site_id');
+    }
+  }
   if (uiFilters.minRevenue != null) { conditions.push('fo.total_fare >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: ₹' + uiFilters.minRevenue); }
   if (uiFilters.maxRevenue != null) { conditions.push('fo.total_fare <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: ₹' + uiFilters.maxRevenue); }
 
@@ -352,6 +363,16 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     // COALESCE: FULFILLMENT_CITY for completed, META_CITY for in-progress/created
     baseConditions.push('UPPER(COALESCE(fo.FULFILLMENT_CITY, fo.META_CITY)) IN (' + cityVals.map(v => "'" + v + "'").join(', ') + ')');
     appliedFilters.push('City: ' + cities.join(', ') + ' (' + cityVals.join('/') + ')');
+  }
+  // Site / Hospital filter — joins BLADE_ORGANIZATION_ENTITIES_NEW_FLATTENED
+  const siteNames = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
+  if (siteNames?.length) {
+    baseConditions.push("og.name IN (" + siteNames.map((s: string) => "'" + s.replace(/'/g, "\'") + "'").join(', ') + ")");
+    appliedFilters.push('Site: ' + siteNames.join(', '));
+    // Force org join
+    if (!optionalJoins.some((j: string) => j.includes('BLADE_ORGANIZATION'))) {
+      optionalJoins.push('LEFT JOIN BLADE.CORE.BLADE_ORGANIZATION_ENTITIES_NEW_FLATTENED og ON fo.META_SITE_ID = og.site_id');
+    }
   }
   if (uiFilters.minRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: ₹' + uiFilters.minRevenue); }
   if (uiFilters.maxRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: ₹' + uiFilters.maxRevenue); }
