@@ -243,8 +243,120 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
     hbxExpr: 'fo.META_PLATFORM_NAME AS platform_name' },
 
   // ─── PATIENT ─────────────────────────────────────────────────────────────────
+  // ── Caller Info (HBX only — not available in BigQuery) ──
+  { id: 'caller_name', label: 'Caller Name', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.META_CALLER_NAME AS caller_name',
+    description: 'Name of person who called/booked' },
+
+  { id: 'caller_mobile', label: 'Caller Mobile', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.META_CALLER_MOBILE AS caller_mobile',
+    description: 'Mobile number of caller' },
+
+  // ── Patient Info ──
   { id: 'patient_name', label: 'Patient Name', group: 'patient', source: 'hbx',
     hbxExpr: 'fo.META_PATIENT_NAME AS patient_name' },
+
+  { id: 'patient_mobile', label: 'Patient Mobile', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.META_PATIENT_MOBILE AS patient_mobile' },
+
+  { id: 'patient_age', label: 'Patient Age', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.META_PATIENT_AGE AS patient_age' },
+
+  { id: 'patient_gender', label: 'Patient Gender', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.META_PATIENT_GENDER AS patient_gender' },
+
+  { id: 'patient_weight', label: 'Patient Weight (kg)', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.META_PATIENT_WEIGHT AS patient_weight' },
+
+  { id: 'patient_uhid', label: 'Patient UHID', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.PATIENT_UHID AS patient_uhid',
+    description: 'Universal Health ID / Hospital patient ID' },
+
+  { id: 'medical_symptoms', label: 'Medical Symptoms', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.META_MEDICAL_SYMPTOMS AS medical_symptoms' },
+
+  // ── Crew Info (HBX) ──
+  { id: 'pilot_name', label: 'Pilot / Driver Name', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.ASSIGNMENT_PRIMARYPILOTINFO_NAME AS pilot_name' },
+
+  { id: 'pilot_phone', label: 'Pilot / Driver Phone', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.ASSIGNMENT_PRIMARYPILOTINFO_PHONE AS pilot_phone' },
+
+  { id: 'paramedic_name', label: 'Paramedic Name', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.ASSIGNMENT_PRIMARYPARAMEDICINFO_NAME AS paramedic_name' },
+
+  { id: 'paramedic_phone', label: 'Paramedic Phone', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.ASSIGNMENT_PRIMARYPARAMEDICINFO_PHONE AS paramedic_phone' },
+
+  // ── Location (HBX) ──
+  { id: 'fulfillment_pickup_lat', label: 'Pickup Latitude', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.FULFILLMENT_PICKUP_LATITUDE AS pickup_lat' },
+
+  { id: 'fulfillment_pickup_lng', label: 'Pickup Longitude', group: 'patient', source: 'hbx',
+    hbxExpr: 'fo.FULFILLMENT_PICKUP_LONGITUDE AS pickup_lng' },
+
+  // ─── PATIENT (BigQuery / RedOS) ───────────────────────────────────────────
+  // Note: Caller/attendant info is NOT stored in BigQuery fact_order.
+  // Only operational patient fields are available.
+  { id: 'ip_patient_number', label: 'IP Patient Number', group: 'patient', source: 'redos',
+    redosExpr: 'fo.ipPatientNumber AS ip_patient_number',
+    description: 'In-patient registration number' },
+
+  { id: 'medical_reason', label: 'Medical Reason / Symptoms', group: 'patient', source: 'redos',
+    redosExpr: 'fo.requested_for_medical_issue_reason_str AS medical_reason',
+    description: 'Chief complaint / medical reason for trip' },
+
+  { id: 'is_emergency', label: 'Is Emergency Case', group: 'patient', source: 'redos',
+    redosExpr: 'fo.is_emergency_case AS is_emergency' },
+
+  { id: 'pickup_address', label: 'Pickup Address', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_pickup_address_location AS pickup_address',
+    description: 'Full pickup address' },
+
+  { id: 'dropoff_address', label: 'Drop-off Address', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_dropoff_address_location AS dropoff_address',
+    description: 'Full drop-off / destination address' },
+
+  { id: 'dropoff_entity', label: 'Drop-off Hospital / Entity', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_dropoff_report_entity AS dropoff_entity',
+    description: 'Hospital name at drop-off' },
+
+  { id: 'pickup_entity', label: 'Pickup Hospital / Entity', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_pickup_report_entity AS pickup_entity',
+    description: 'Hospital name at pickup' },
+
+  { id: 'patient_pickup_eta_min', label: 'Patient Pickup ETA (min)', group: 'patient', source: 'redos',
+    redosExpr: 'ROUND(fo.patient_pickup_eta / 60, 1) AS patient_pickup_eta_min', transform: 'none' },
+
+  { id: 'patient_dropoff_eta_min', label: 'Patient Drop ETA (min)', group: 'patient', source: 'redos',
+    redosExpr: 'ROUND(fo.patient_dropoff_eta / 60, 1) AS patient_dropoff_eta_min', transform: 'none' },
+
+  { id: 'patient_handover_at_ist', label: 'Patient Handover Time (IST)', group: 'patient', source: 'redos',
+    redosExpr: "FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S', TIMESTAMP_MILLIS(fo.patient_handover_at), 'Asia/Kolkata') AS patient_handover_at_ist",
+    transform: 'ist' },
+
+  { id: 'assigned_paramedic', label: 'Assigned Paramedic', group: 'patient', source: 'redos',
+    redosExpr: 'fo.assigned_paramedic_username AS assigned_paramedic' },
+
+  { id: 'assigned_pilot', label: 'Assigned Pilot / Driver', group: 'patient', source: 'redos',
+    redosExpr: 'fo.assigned_pilot_username AS assigned_pilot' },
+
+  { id: 'patient_care_form', label: 'Patient Care Form Uploaded', group: 'patient', source: 'redos',
+    redosExpr: 'fo.is_patient_care_form_uploaded AS patient_care_form' },
+
+  { id: 'wp_pickup_lat', label: 'Pickup Latitude', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_pickup_lat AS pickup_lat' },
+
+  { id: 'wp_pickup_lng', label: 'Pickup Longitude', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_pickup_long AS pickup_lng' },
+
+  { id: 'wp_dropoff_lat', label: 'Drop-off Latitude', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_dropoff_lat AS dropoff_lat' },
+
+  { id: 'wp_dropoff_lng', label: 'Drop-off Longitude', group: 'patient', source: 'redos',
+    redosExpr: 'fo.wp_dropoff_long AS dropoff_lng' },
+
+];
 
   { id: 'patient_mobile', label: 'Patient Mobile', group: 'patient', source: 'hbx',
     hbxExpr: 'fo.META_PATIENT_MOBILE AS patient_mobile' },
