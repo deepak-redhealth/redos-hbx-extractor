@@ -4,8 +4,12 @@ let bqClient: any = null;
 async function getClient() {
   if (bqClient) return bqClient;
   const { BigQuery } = await import('@google-cloud/bigquery');
+
+  // ALWAYS hardcode projectId — never let SDK auto-detect from env vars
+  // (it picks up SNOWFLAKE_DATABASE=BLADE otherwise)
   const projectId = 'redos-prod';
   const credBase64 = process.env.BIGQUERY_CREDENTIALS_BASE64;
+
   if (credBase64) {
     const creds = JSON.parse(Buffer.from(credBase64, 'base64').toString('utf8'));
     bqClient = new BigQuery({ projectId, credentials: creds });
