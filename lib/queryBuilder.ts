@@ -228,15 +228,11 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     conditions.push('UPPER(fo.city) IN (' + cityVals.map(v => "'" + v + "'").join(', ') + ')');
     appliedFilters.push('City: ' + cities.join(', ') + ' (' + cityVals.join('/') + ')');
   }
-  // Site / Hospital filter — joins BLADE_ORGANIZATION_ENTITIES_NEW_FLATTENED
-  const siteNames = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
-  if (siteNames?.length) {
-    baseConditions.push("og.name IN (" + siteNames.map((s: string) => "'" + s.replace(/'/g, "\'") + "'").join(', ') + ")");
-    appliedFilters.push('Site: ' + siteNames.join(', '));
-    // Force org join
-    if (!optionalJoins.some((j: string) => j.includes('BLADE_ORGANIZATION'))) {
-      optionalJoins.push('LEFT JOIN BLADE.CORE.BLADE_ORGANIZATION_ENTITIES_NEW_FLATTENED og ON fo.META_SITE_ID = og.site_id');
-    }
+  // Site / Hospital filter — BQ uses client_v2.branch_name via fleet_v2
+  const siteNamesBq = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
+  if (siteNamesBq?.length) {
+    conditions.push("c.branch_name IN (" + siteNamesBq.map((s: string) => "'" + s.replace(/'/g, "\'") + "'").join(', ') + ")");
+    appliedFilters.push('Site: ' + siteNamesBq.join(', '));
   }
   if (uiFilters.minRevenue != null) { conditions.push('fo.total_fare >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: ₹' + uiFilters.minRevenue); }
   if (uiFilters.maxRevenue != null) { conditions.push('fo.total_fare <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: ₹' + uiFilters.maxRevenue); }
