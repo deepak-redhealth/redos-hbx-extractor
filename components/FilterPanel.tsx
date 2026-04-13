@@ -204,6 +204,27 @@ export default function FilterPanel({ filters, onChange }: Props) {
           </div>
         </section>
 
+        {/* ─ Order Classification ─ */}
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>🏷️ Order Classification</h3>
+          <div className={styles.checkGroup}>
+            {['INBOUND', 'OUTBOUND', 'TRANSFER', 'INTERNAL_TRANSFER', 'LAMA/DAMA'].map(c => (
+              <label key={c} className={styles.checkRow}>
+                <input
+                  type="checkbox"
+                  checked={(f.orderClassification || []).includes(c)}
+                  onChange={() => onChange(set(f, 'orderClassification', toggleArr(f.orderClassification, c)))}
+                  className={styles.check}
+                />
+                <span className={styles.checkLabel}>{c}</span>
+              </label>
+            ))}
+          </div>
+          {(f.orderClassification?.length ?? 0) > 0 && (
+            <button className={styles.clearBtn} onClick={() => onChange(set(f, 'orderClassification', []))}>Clear</button>
+          )}
+        </section>
+
         {/* ─ Site / Hospital ─ */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>🏥 Site / Hospital</h3>

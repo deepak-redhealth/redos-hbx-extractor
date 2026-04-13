@@ -26,6 +26,7 @@ export interface UIFilters {
   createdByEmail?: string;
   countOnly?: boolean;
   siteName?: string[];
+  orderClassification?: string[];
 }
 
 export interface QueryBuilderInput {
@@ -189,6 +190,12 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     }
   }
 
+  const orderClassBq = uiFilters.orderClassification?.length ? uiFilters.orderClassification : (aiParsed?.filters as any)?.orderClassification;
+  if (orderClassBq?.length) {
+    conditions.push("fo.order_classification IN (" + orderClassBq.map((c: string) => "'" + c + "'").join(', ') + ")");
+    appliedFilters.push('Classification: ' + orderClassBq.join(', '));
+  }
+
   const vehicleTypes = uiFilters.vehicleType?.length ? uiFilters.vehicleType : aiParsed?.filters?.vehicleType;
   if (vehicleTypes?.length) {
     // RedOS vehicle types use format: ALS-standard, ALS-elite, BLS-standard etc
@@ -322,6 +329,12 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     }
   } else {
     appliedFilters.push('Finance Drop Date: ' + from + ' to ' + to);
+  }
+
+  const orderClassHbx = uiFilters.orderClassification?.length ? uiFilters.orderClassification : (aiParsed?.filters as any)?.orderClassification;
+  if (orderClassHbx?.length) {
+    baseConditions.push("fo.META_ORDER_CLASSIFICATION IN (" + orderClassHbx.map((c: string) => "'" + c + "'").join(', ') + ")");
+    appliedFilters.push('Classification: ' + orderClassHbx.join(', '));
   }
 
   const vehicleTypes = uiFilters.vehicleType?.length ? uiFilters.vehicleType : aiParsed?.filters?.vehicleType;

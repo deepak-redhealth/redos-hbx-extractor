@@ -242,6 +242,13 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
   { id: 'platform_name', label: 'Platform Name', group: 'user', source: 'hbx',
     hbxExpr: 'fo.META_PLATFORM_NAME AS platform_name' },
 
+  // ─── ORDER CLASSIFICATION ───────────────────────────────────────────────────
+  { id: 'order_classification', label: 'Order Classification', group: 'trip', source: 'both',
+    redosExpr: 'fo.order_classification AS order_classification',
+    hbxExpr: 'fo.META_ORDER_CLASSIFICATION AS order_classification',
+    description: 'INBOUND / OUTBOUND / TRANSFER / INTERNAL_TRANSFER / LAMA/DAMA',
+    defaultSelected: true },
+
   // ─── PATIENT ─────────────────────────────────────────────────────────────────
   // ── Caller Info (HBX only — not available in BigQuery) ──
   { id: 'caller_name', label: 'Caller Name', group: 'patient', source: 'hbx',
