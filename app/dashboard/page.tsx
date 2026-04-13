@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const [loadingExec, setLoadingExec]   = useState(false);
   const [loadingExport, setLoadingExport] = useState(false);
   const [error, setError]               = useState('');
-  const [activeTab, setActiveTab]       = useState<'columns'|'filters'|'ai'|'preview'|'results'>('columns');
+  const [activeTab, setActiveTab]       = useState<string>('agent');
   const [warnings, setWarnings]         = useState<string[]>([]);
 
   useEffect(() => {
