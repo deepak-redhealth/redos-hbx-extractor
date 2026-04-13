@@ -360,15 +360,12 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     baseConditions.push('UPPER(COALESCE(fo.FULFILLMENT_CITY, fo.META_CITY)) IN (' + cityVals.map(v => "'" + v + "'").join(', ') + ')');
     appliedFilters.push('City: ' + cities.join(', ') + ' (' + cityVals.join('/') + ')');
   }
-  // Site / Hospital filter — joins BLADE_ORGANIZATION_ENTITIES_NEW_FLATTENED
+  // Site / Hospital filter — uses og.name, forces org join below
   const siteNames = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
+  const needsSiteJoin = !!(siteNames?.length);
   if (siteNames?.length) {
     baseConditions.push("og.name IN (" + siteNames.map((s: string) => "'" + s.replace(/'/g, "\'") + "'").join(', ') + ")");
     appliedFilters.push('Site: ' + siteNames.join(', '));
-    // Force org join
-    if (!optionalJoins.some((j: string) => j.includes('BLADE_ORGANIZATION'))) {
-      optionalJoins.push('LEFT JOIN BLADE.CORE.BLADE_ORGANIZATION_ENTITIES_NEW_FLATTENED og ON fo.META_SITE_ID = og.site_id');
-    }
   }
   if (uiFilters.minRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: ₹' + uiFilters.minRevenue); }
   if (uiFilters.maxRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: ₹' + uiFilters.maxRevenue); }
@@ -379,7 +376,7 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
   }
 
   // Optional joins
-  const needsOrg      = selectedDefs.some(c => ['site_name', 'site_type'].includes(c.id));
+  const needsOrg      = selectedDefs.some(c => ['site_name', 'site_type'].includes(c.id)) || needsSiteJoin;
   const needsVehicle  = selectedDefs.some(c => c.id === 'vehicle_subtype');
   const needsUserBu   = selectedDefs.some(c => ['created_by_role', 'created_by_department'].includes(c.id));
   const optionalJoins: string[] = [];
