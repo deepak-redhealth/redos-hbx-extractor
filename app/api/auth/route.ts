@@ -1,20 +1,62 @@
+// app/api/auth/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { getUserByEmail, updateLastLogin } from '@/lib/users';
+
+interface User {
+  id: string; email: string; name: string; passwordHash: string;
+  role: string; enabled: boolean; createdAt: string; createdBy: string;
+  lastLogin?: string; department?: string; allowedSources?: string[];
+}
+
+function getUsers(): User[] {
+  // 1. Try USERS_JSON env var (Vercel production)
+  try {
+    const raw = process.env.USERS_JSON;
+    if (raw && raw.trim().startsWith('[')) {
+      const users = JSON.parse(raw) as User[];
+      if (users.length > 0) return users;
+    }
+  } catch (e) { console.error('USERS_JSON parse error:', e); }
+
+  // 2. Try file system (local dev only)
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const file = path.join(process.cwd(), 'users.json');
+    if (fs.existsSync(file)) {
+      const users = JSON.parse(fs.readFileSync(file, 'utf8')) as User[];
+      if (users.length > 0) return users;
+    }
+  } catch {}
+
+  return [];
+}
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
-    if (!email || !password) return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+    }
 
-    const user = getUserByEmail(email);
-    if (!user) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    const users = getUsers();
+    console.log('Users loaded:', users.length, '| Looking for:', email);
 
-    if (!user.enabled) return NextResponse.json({ error: 'Your account has been disabled. Contact your administrator.' }, { status: 403 });
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    if (user.enabled === false) {
+      return NextResponse.json({ error: 'Your account has been disabled. Contact your administrator.' }, { status: 403 });
+    }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    console.log('Password valid:', valid);
+    if (!valid) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
 
     const token = jwt.sign(
       { email: user.email, name: user.name, role: user.role, id: user.id },
@@ -22,13 +64,12 @@ export async function POST(req: NextRequest) {
       { expiresIn: '8h' }
     );
 
-    updateLastLogin(user.email);
-
     return NextResponse.json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, allowedSources: user.allowedSources },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, allowedSources: user.allowedSources || ['both'] },
     });
   } catch (err: any) {
-    return NextResponse.json({ error: 'Auth failed' }, { status: 500 });
+    console.error('Auth error:', err);
+    return NextResponse.json({ error: 'Auth failed: ' + err.message }, { status: 500 });
   }
 }
