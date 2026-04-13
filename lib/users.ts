@@ -23,14 +23,15 @@ export function getUsers(): User[] {
   try {
     if (fs.existsSync(USERS_FILE)) {
       const raw = fs.readFileSync(USERS_FILE, 'utf8');
-      return JSON.parse(raw) as User[];
+      const users = JSON.parse(raw) as User[];
+      if (users.length > 0) return users;
     }
-    // Fallback to env var
-    const raw = process.env.USERS_JSON || '[]';
-    return JSON.parse(raw) as User[];
-  } catch {
-    return [];
-  }
+  } catch {}
+  try {
+    const raw = process.env.USERS_JSON;
+    if (raw) return JSON.parse(raw) as User[];
+  } catch {}
+  return [];
 }
 
 export function saveUsers(users: User[]): void {
