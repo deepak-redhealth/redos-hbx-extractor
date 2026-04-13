@@ -39,16 +39,16 @@ export default function DashboardPage() {
   const [warnings, setWarnings]         = useState<string[]>([]);
 
   useEffect(() => {
-    const t = localStorage.getItem('rh_token');
-    const u = localStorage.getItem('rh_user');
+    const t = localStorage.getItem('token');
+    const u = localStorage.getItem('user');
     if (!t) { router.push('/'); return; }
     setToken(t);
     if (u) setUser(JSON.parse(u));
   }, [router]);
 
   function logout() {
-    localStorage.removeItem('rh_token');
-    localStorage.removeItem('rh_user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     router.push('/');
   }
 
