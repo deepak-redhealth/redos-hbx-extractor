@@ -410,7 +410,18 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     baseConditions.push('fo.ASSIGNMENT_PROVIDER_TYPE IN (' + hbxOwnership.map((o: string) => "'" + o + "'").join(', ') + ')');
     appliedFilters.push('Ownership: ' + ownershipTypes.join(', ') + ' (' + hbxOwnership.join('/') + ')');
   }
-  const cities = uiFilters.city?.length ? uiFilters.city : aiParsed?.filters?.city;
+
+
+  // City Group filter (HBX)
+  if (uiFilters.cityGroup?.length) {
+    const def = getColumnById('city_group');
+    if (def?.hbxExpr) {
+      const caseBody = def.hbxExpr.replace(/\s+AS\s+city_group\s*$/i, '').trim();
+      const vals = uiFilters.cityGroup.map(v => "'" + v.replace(/'/g, "''") + "'").join(', ');
+      baseConditions.push('(' + caseBody + ') IN (' + vals + ')');
+      appliedFilters.push('City Group: ' + uiFilters.cityGroup.join(', '));
+    }
+  }  const cities = uiFilters.city?.length ? uiFilters.city : aiParsed?.filters?.city;
   if (cities?.length) {
     const CITY_CODE_MAP: Record<string, string[]> = {
       hyderabad: ['HYD'], bangalore: ['BLR'], bengaluru: ['BLR'],
