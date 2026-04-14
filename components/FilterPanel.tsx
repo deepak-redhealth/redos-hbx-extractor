@@ -1,87 +1,153 @@
 'use client';
 // components/FilterPanel.tsx
+// Source-aware filter panel — renders BigQuery (REDos) or Snowflake (HBX)
+// native values based on the selected data source.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './FilterPanel.module.css';
+
+export type DbSource = 'redos' | 'hbx';
 
 interface Props {
   filters: any;
   onChange: (f: any) => void;
+  /** Which DB the user is querying. Drives which native values / labels are shown. */
+  dataSource: DbSource;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-source filter configuration
+// The `value` is the DB-native value sent to the query builder (no mapping needed).
+// The `label` is what the user sees.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface Opt { value: string; label: string; }
+
+interface SourceConfig {
+  title: string;        // Shown in section headers, e.g. "REDos" / "HBX"
+  badge: string;        // Shown next to titles, e.g. "BigQuery" / "Snowflake"
+  statuses: Opt[];
+  vehicleTypes: Opt[];
+  ownership: Opt[];
+  orderClassification: Opt[];
+}
+
+const SOURCE_CONFIG: Record<DbSource, SourceConfig> = {
+  redos: {
+    title: 'REDos',
+    badge: 'BigQuery',
+    // BQ (fact_order.oms_order_status) lowercase native values
+    statuses: [
+      { value: 'fulfilled',  label: 'Fulfilled (Completed)' },
+      { value: 'cancelled',  label: 'Cancelled' },
+      { value: 'dispatched', label: 'Dispatched' },
+      { value: 'draft',      label: 'Draft (Pending)' },
+    ],
+    // BQ fleet_type_sent — LIKE prefix match handled in queryBuilder
+    vehicleTypes: [
+      { value: 'als',      label: 'ALS (ALS-*)' },
+      { value: 'bls',      label: 'BLS (BLS-*)' },
+      { value: 'ecco',     label: 'ECO' },
+      { value: 'hearse',   label: 'Hearse' },
+      { value: 'neonatal', label: 'Neonatal (ASTH-*)' },
+    ],
+    // BQ fleet_ownership_type native values
+    ownership: [
+      { value: '1P',       label: 'Own (1P)' },
+      { value: '2P',       label: 'Sathi (2P)' },
+      { value: '3P',       label: 'Non-Sathi (3P)' },
+      { value: 'Alliance', label: 'Alliance' },
+    ],
+    orderClassification: [
+      { value: 'INBOUND',           label: 'Inbound' },
+      { value: 'OUTBOUND',          label: 'Outbound' },
+      { value: 'TRANSFER',          label: 'Transfer' },
+      { value: 'INTERNAL_TRANSFER', label: 'Internal Transfer' },
+      { value: 'LAMA/DAMA',         label: 'LAMA / DAMA' },
+    ],
+  },
+  hbx: {
+    title: 'HBX',
+    badge: 'Snowflake',
+    // HBX (META_ORDER_STATUS) uppercase native values
+    statuses: [
+      { value: 'COMPLETED',  label: 'Completed' },
+      { value: 'CANCELLED',  label: 'Cancelled' },
+      { value: 'DISPATCHED', label: 'Dispatched' },
+      { value: 'PENDING',    label: 'Pending' },
+      { value: 'REASSIGNED', label: 'Reassigned' },
+    ],
+    // HBX ASSIGNMENT_AMBULANCE_TYPE — stored lowercase
+    vehicleTypes: [
+      { value: 'als',      label: 'ALS' },
+      { value: 'bls',      label: 'BLS' },
+      { value: 'ecco',     label: 'ECO' },
+      { value: 'hearse',   label: 'Hearse' },
+      { value: 'neonatal', label: 'Neonatal' },
+    ],
+    // HBX ASSIGNMENT_PROVIDER_TYPE native values
+    ownership: [
+      { value: 'OWNED',      label: 'Own (OWNED)' },
+      { value: 'SAATHI',     label: 'Sathi (SAATHI)' },
+      { value: 'NON_SAATHI', label: 'Non-Sathi (NON_SAATHI)' },
+      { value: 'ALLIANCE',   label: 'Alliance' },
+    ],
+    orderClassification: [
+      { value: 'INBOUND',           label: 'Inbound' },
+      { value: 'OUTBOUND',          label: 'Outbound' },
+      { value: 'TRANSFER',          label: 'Transfer' },
+      { value: 'INTERNAL_TRANSFER', label: 'Internal Transfer' },
+      { value: 'LAMA/DAMA',         label: 'LAMA / DAMA' },
+    ],
+  },
+};
+
+// Shared (same for both DBs — codes / full names are normalized in queryBuilder)
 const DATE_PRESETS = [
-  { value: 'today',     label: 'Today' },
-  { value: 'yesterday', label: 'Yesterday' },
-  { value: 'last7days', label: 'Last 7 Days' },
-  { value: 'last30days',label: 'Last 30 Days' },
-  { value: 'thismonth', label: 'This Month' },
-  { value: 'lastmonth', label: 'Last Month' },
-  { value: 'custom',    label: 'Custom Range' },
+  { value: 'today',      label: 'Today' },
+  { value: 'yesterday',  label: 'Yesterday' },
+  { value: 'last7days',  label: 'Last 7 Days' },
+  { value: 'last30days', label: 'Last 30 Days' },
+  { value: 'thismonth',  label: 'This Month' },
+  { value: 'lastmonth',  label: 'Last Month' },
+  { value: 'custom',     label: 'Custom Range' },
 ];
 
-const VEHICLE_TYPES = ['als', 'bls', 'hearse', 'neonatal'];
-const OWNERSHIP     = ['own', 'sathi', 'non-sathi', 'alliance'];
-const STATUSES      = ['COMPLETED', 'CANCELLED', 'DISPATCHED', 'PENDING', 'REASSIGNED'];
-// BQ maps: COMPLETED→fulfilled, CANCELLED→cancelled, DISPATCHED→dispatched, PENDING→draft
-const CITIES        = ['Hyderabad', 'Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata', 'Noida', 'Gurugram'];
+const CITIES = ['Hyderabad', 'Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata', 'Noida', 'Gurugram'];
 
 // Top hospitals/sites from both databases (HBX: og.name | BQ: c.branch_name)
 const SITES = [
-  'AIG Hospital-Gachibowli, Hyderabad',
-  'AIG - Gachibowli',
+  'AIG Hospital-Gachibowli, Hyderabad', 'AIG - Gachibowli',
   'Apollo Hospital - Navi Mumbai',
-  'CARE Hospital - Banjara Hills',
-  'CARE Hospital - HiTech City, Hyderabad',
-  'CARE Hospital - Musheerabad',
-  'CARE Hospital - Nampally',
-  'CARE Hospital Indore',
+  'CARE Hospital - Banjara Hills', 'CARE Hospital - HiTech City, Hyderabad',
+  'CARE Hospital - Musheerabad', 'CARE Hospital - Nampally', 'CARE Hospital Indore',
   'CMRI - Kolkata',
   'Dr Rela Institute and Medical Center- Main Unit',
   'Dr. L H Hiranandani Hospital - Mumbai',
   'Fortis Escorts Heart Institute - Okhla',
-  'Fortis Hospital - BG Road, Bengaluru',
-  'Fortis Hospital - Shalimar Bagh, Delhi',
-  'Fortis Hospital Noida',
-  'Fortis Hospital-Hills,Mohali',
-  'Fortis Hospital-Mohali',
-  'Fortis Memorial Research Institute',
-  'Fortis Memorial Research Institute-Gurgaon',
+  'Fortis Hospital - BG Road, Bengaluru', 'Fortis Hospital - Shalimar Bagh, Delhi',
+  'Fortis Hospital Noida', 'Fortis Hospital-Hills,Mohali', 'Fortis Hospital-Mohali',
+  'Fortis Memorial Research Institute', 'Fortis Memorial Research Institute-Gurgaon',
   'Fortis Rajan Dhall Hospital- Vasant Kunj ,Delhi',
-  'KIMS Hospital - Secunderabad',
-  'KIMS Hospital -Kondapur, Hyderabad',
-  'KIMS Sunshine - Secunderabad',
-  'KIMS Sunshine-Secunderabad,Hyderabad',
-  'Kokilaben Dhirubhai Ambani Hospital',
-  'Kokilaben Dhirubhai Ambani Hospital-Mumbai',
-  'Medanta Hospital - Lucknow',
-  'Medanta Hospital- Lucknow',
-  'Medanta Hospital- Patna',
+  'KIMS Hospital - Secunderabad', 'KIMS Hospital -Kondapur, Hyderabad',
+  'KIMS Sunshine - Secunderabad', 'KIMS Sunshine-Secunderabad,Hyderabad',
+  'Kokilaben Dhirubhai Ambani Hospital', 'Kokilaben Dhirubhai Ambani Hospital-Mumbai',
+  'Medanta Hospital - Lucknow', 'Medanta Hospital- Lucknow', 'Medanta Hospital- Patna',
   'Medway Hospital (Dedicated)- Chennai',
-  'NH RNT - Kolkata',
-  'NH Super Howrah - Kolkata',
-  'Paras - kanpur',
-  'Paras Hospital - Patna',
-  'Paras Hospital- Panchkula',
-  'Red Health',
-  'Red Health- Bangalore',
-  'Red Health- Delhi NCR',
-  'Red Health- Hyderabad',
-  'Red Health-Kolkata',
-  'Regency Hospital Tower 1 - Kanpur',
-  'Regency Renal - Kanpur',
-  'Regency Tower 1 - Kanpur',
-  'Regency Tower 2 - Kanpur',
-  'Sakra World Hospital - Bangalore',
-  'Sakra World Hospital-Bengaluru',
+  'NH RNT - Kolkata', 'NH Super Howrah - Kolkata',
+  'Paras - kanpur', 'Paras Hospital - Patna', 'Paras Hospital- Panchkula',
+  'Red Health', 'Red Health- Bangalore', 'Red Health- Delhi NCR',
+  'Red Health- Hyderabad', 'Red Health-Kolkata',
+  'Regency Hospital Tower 1 - Kanpur', 'Regency Renal - Kanpur',
+  'Regency Tower 1 - Kanpur', 'Regency Tower 2 - Kanpur',
+  'Sakra World Hospital - Bangalore', 'Sakra World Hospital-Bengaluru',
   'The Calcutta Medical Research Institute',
-  'Utkal - Bhubaneswar',
-  'Vijaya Hospital - Chennai',
-  'Website',
-  '911 Brand Number',
-  'Yashoda Hospital- Kaushambi, Ghaziabad',
-  'Yashoda Kaushambi',
+  'Utkal - Bhubaneswar', 'Vijaya Hospital - Chennai',
+  'Website', '911 Brand Number',
+  'Yashoda Hospital- Kaushambi, Ghaziabad', 'Yashoda Kaushambi',
 ].sort();
 
+// ─── helpers ─────────────────────────────────────────────────────────────────
 function set(filters: any, key: string, val: any) { return { ...filters, [key]: val }; }
 
 function toggleArr(arr: string[] | undefined, val: string): string[] {
@@ -89,13 +155,61 @@ function toggleArr(arr: string[] | undefined, val: string): string[] {
   return a.includes(val) ? a.filter(v => v !== val) : [...a, val];
 }
 
-export default function FilterPanel({ filters, onChange }: Props) {
+// Prune values from a filter array that aren't valid for the given options list.
+function pruneToValid(arr: string[] | undefined, validValues: string[]): string[] | undefined {
+  if (!arr?.length) return arr;
+  const allowed = new Set(validValues);
+  const next = arr.filter(v => allowed.has(v));
+  return next.length ? next : undefined;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+export default function FilterPanel({ filters, onChange, dataSource }: Props) {
   const f = filters;
+  const cfg = SOURCE_CONFIG[dataSource];
   const isCustomDate = !f.datePreset || f.datePreset === 'custom';
   const [siteSearch, setSiteSearch] = useState('');
 
+  // When data source flips, drop any previously-selected values that aren't
+  // valid for the new source (e.g. 'COMPLETED' selected under HBX becomes
+  // invalid when switching to REDos which uses 'fulfilled').
+  useEffect(() => {
+    const next = { ...f };
+    let changed = false;
+    const prune = (key: string, valid: string[]) => {
+      const pruned = pruneToValid(next[key], valid);
+      if (pruned !== next[key]) { next[key] = pruned; changed = true; }
+    };
+    prune('status',              cfg.statuses.map(o => o.value));
+    prune('vehicleType',         cfg.vehicleTypes.map(o => o.value));
+    prune('ownershipType',       cfg.ownership.map(o => o.value));
+    prune('orderClassification', cfg.orderClassification.map(o => o.value));
+    if (changed) onChange(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataSource]);
+
   return (
     <div className={styles.wrap}>
+      {/* Source banner so the user always knows which DB these filters target */}
+      <div
+        className={styles.section}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}
+      >
+        <strong>Filtering against:</strong>
+        <span
+          style={{
+            padding: '2px 8px',
+            borderRadius: 4,
+            background: dataSource === 'redos' ? '#e6f4ea' : '#e8f0fe',
+            color: dataSource === 'redos' ? '#137333' : '#1a73e8',
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+        >
+          {cfg.title} · {cfg.badge}
+        </span>
+      </div>
+
       <div className={styles.grid}>
 
         {/* ─ Date Filters ─ */}
@@ -106,7 +220,7 @@ export default function FilterPanel({ filters, onChange }: Props) {
             <label className={styles.label}>Date Logic</label>
             <div className={styles.radioGroup}>
               {[
-                { val: 'creation', label: 'Creation Date', desc: 'Funnel / Ops' },
+                { val: 'creation',    label: 'Creation Date',    desc: 'Funnel / Ops' },
                 { val: 'fulfillment', label: 'Fulfillment Date', desc: 'Finance' },
               ].map(o => (
                 <label key={o.val} className={`${styles.radioCard} ${f.dateField === o.val ? styles.radioCardActive : ''}`}>
@@ -151,18 +265,20 @@ export default function FilterPanel({ filters, onChange }: Props) {
           )}
         </section>
 
-        {/* ─ Order Status ─ */}
+        {/* ─ Order Status (source-aware) ─ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>📋 Order Status</h3>
+          <h3 className={styles.sectionTitle}>
+            📋 Order Status <span style={{ fontSize: 11, opacity: 0.7 }}>({cfg.title})</span>
+          </h3>
           <div className={styles.checkGroup}>
-            {STATUSES.map(s => (
-              <label key={s} className={styles.checkRow}>
+            {cfg.statuses.map(s => (
+              <label key={s.value} className={styles.checkRow}>
                 <input type="checkbox"
-                  checked={(f.status || []).includes(s)}
-                  onChange={() => onChange(set(f, 'status', toggleArr(f.status, s)))}
+                  checked={(f.status || []).includes(s.value)}
+                  onChange={() => onChange(set(f, 'status', toggleArr(f.status, s.value)))}
                   className={styles.check}
                 />
-                <span className={styles.checkLabel}>{s}</span>
+                <span className={styles.checkLabel}>{s.label}</span>
               </label>
             ))}
           </div>
@@ -171,35 +287,39 @@ export default function FilterPanel({ filters, onChange }: Props) {
           )}
         </section>
 
-        {/* ─ Vehicle Type ─ */}
+        {/* ─ Vehicle Type (source-aware) ─ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>🚑 Vehicle Type</h3>
+          <h3 className={styles.sectionTitle}>
+            🚑 Vehicle Type <span style={{ fontSize: 11, opacity: 0.7 }}>({cfg.title})</span>
+          </h3>
           <div className={styles.checkGroup}>
-            {VEHICLE_TYPES.map(v => (
-              <label key={v} className={styles.checkRow}>
+            {cfg.vehicleTypes.map(v => (
+              <label key={v.value} className={styles.checkRow}>
                 <input type="checkbox"
-                  checked={(f.vehicleType || []).includes(v)}
-                  onChange={() => onChange(set(f, 'vehicleType', toggleArr(f.vehicleType, v)))}
+                  checked={(f.vehicleType || []).includes(v.value)}
+                  onChange={() => onChange(set(f, 'vehicleType', toggleArr(f.vehicleType, v.value)))}
                   className={styles.check}
                 />
-                <span className={styles.checkLabel}>{v}</span>
+                <span className={styles.checkLabel}>{v.label}</span>
               </label>
             ))}
           </div>
         </section>
 
-        {/* ─ Ownership ─ */}
+        {/* ─ Ownership (source-aware) ─ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>🏷️ Ownership Type</h3>
+          <h3 className={styles.sectionTitle}>
+            🏷️ Ownership Type <span style={{ fontSize: 11, opacity: 0.7 }}>({cfg.title})</span>
+          </h3>
           <div className={styles.checkGroup}>
-            {OWNERSHIP.map(o => (
-              <label key={o} className={styles.checkRow}>
+            {cfg.ownership.map(o => (
+              <label key={o.value} className={styles.checkRow}>
                 <input type="checkbox"
-                  checked={(f.ownershipType || []).includes(o)}
-                  onChange={() => onChange(set(f, 'ownershipType', toggleArr(f.ownershipType, o)))}
+                  checked={(f.ownershipType || []).includes(o.value)}
+                  onChange={() => onChange(set(f, 'ownershipType', toggleArr(f.ownershipType, o.value)))}
                   className={styles.check}
                 />
-                <span className={styles.checkLabel}>{o}</span>
+                <span className={styles.checkLabel}>{o.label}</span>
               </label>
             ))}
           </div>
@@ -209,15 +329,15 @@ export default function FilterPanel({ filters, onChange }: Props) {
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>🏷️ Order Classification</h3>
           <div className={styles.checkGroup}>
-            {['INBOUND', 'OUTBOUND', 'TRANSFER', 'INTERNAL_TRANSFER', 'LAMA/DAMA'].map(c => (
-              <label key={c} className={styles.checkRow}>
+            {cfg.orderClassification.map(c => (
+              <label key={c.value} className={styles.checkRow}>
                 <input
                   type="checkbox"
-                  checked={(f.orderClassification || []).includes(c)}
-                  onChange={() => onChange(set(f, 'orderClassification', toggleArr(f.orderClassification, c)))}
+                  checked={(f.orderClassification || []).includes(c.value)}
+                  onChange={() => onChange(set(f, 'orderClassification', toggleArr(f.orderClassification, c.value)))}
                   className={styles.check}
                 />
-                <span className={styles.checkLabel}>{c}</span>
+                <span className={styles.checkLabel}>{c.label}</span>
               </label>
             ))}
           </div>
@@ -303,10 +423,10 @@ export default function FilterPanel({ filters, onChange }: Props) {
           <h3 className={styles.sectionTitle}>⚙️ Advanced Options</h3>
           <div className={styles.switchGroup}>
             {[
-              { key: 'isScheduled',     label: 'Scheduled trips only' },
-              { key: 'excludeFreeTrips',label: 'Exclude free trips' },
-              { key: 'excludeTestCases',label: 'Exclude test cases' },
-              { key: 'countOnly',       label: 'Count only (no row data)' },
+              { key: 'isScheduled',      label: 'Scheduled trips only' },
+              { key: 'excludeFreeTrips', label: 'Exclude free trips' },
+              { key: 'excludeTestCases', label: 'Exclude test cases' },
+              { key: 'countOnly',        label: 'Count only (no row data)' },
             ].map(({ key, label }) => (
               <label key={key} className={styles.switchRow}>
                 <div className={`${styles.toggle} ${f[key] ? styles.toggleOn : ''}`}
@@ -331,7 +451,7 @@ export default function FilterPanel({ filters, onChange }: Props) {
               value={f.createdByEmail || ''}
               onChange={e => onChange(set(f, 'createdByEmail', e.target.value || undefined))}
             />
-            <div style={{fontSize:'11px', color:'var(--text3)', marginTop:'4px'}}>
+            <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>
               Searches: Booking Created By → Enquiry Created By → Created By
             </div>
           </div>

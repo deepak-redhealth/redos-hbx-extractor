@@ -251,10 +251,11 @@ export default function DashboardPage() {
           />
         )}
         {activeTab === 'filters' && (
-          <FilterPanel
-            filters={uiFilters}
-            onChange={setUiFilters}
-          />
+        <FilterPanel
+        filters={uiFilters}
+        onChange={setUiFilters}
+        dataSource={dataSource}
+        />
         )}
         {activeTab === 'ai' && (
           <NLQueryInput

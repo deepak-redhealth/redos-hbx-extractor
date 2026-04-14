@@ -1,6 +1,17 @@
 // lib/queryBuilder.ts — Red Health Data Hub Query Builder
 // Funnel logic  = creation date (both BigQuery + Snowflake)
 // Finance logic = COALESCE(drop_date, FULFILLMENT_FULFILLED_AT_IST) via CTE
+//
+// The FilterPanel now emits DB-native filter values per dataSource:
+//   • redos (BigQuery):  statuses = fulfilled|cancelled|dispatched|draft
+//                        ownership = 1P|2P|3P|Alliance
+//                        vehicleType = als|bls|ecco|hearse|neonatal
+//   • hbx   (Snowflake): statuses = COMPLETED|CANCELLED|DISPATCHED|PENDING|REASSIGNED
+//                        ownership = OWNED|SAATHI|NON_SAATHI|ALLIANCE
+//                        vehicleType = als|bls|ecco|hearse|neonatal
+// Mapping tables below stay backward-compatible with the previous UI values
+// (own/sathi/non-sathi/alliance, COMPLETED/CANCELLED/...) so existing saved
+// filters / AI-parsed inputs keep working.
 
 import { ColumnDef, COLUMN_SCHEMA, getColumnById } from './columnSchema';
 import { ParsedIntent } from './aiParser';
@@ -53,28 +64,16 @@ export interface BuiltQuery {
 // Overlap period:   Jul 15, 2025 – Sep 30, 2025 (both available)
 
 export function routeDatabase(from: string, to: string, preferred?: DbSource): DbSource {
-  const BQ_CUTOFF   = '2025-09-30'; // last date in BigQuery
-  const HBX_START   = '2025-10-01'; // first date in Snowflake (exclusive)
-  const OVERLAP_START = '2025-07-15'; // overlap period start
-
-  // If entire range is after BQ cutoff → must use HBX
+  const BQ_CUTOFF     = '2025-09-30';
+  const OVERLAP_START = '2025-07-15';
   if (from > BQ_CUTOFF) return 'hbx';
-
-  // If entire range is before overlap → must use BigQuery
   if (to < OVERLAP_START) return 'redos';
-
-  // If range spans both sides of cutoff → need cross-DB (default to HBX for finance, RedOS for funnel)
-  if (from <= BQ_CUTOFF && to > BQ_CUTOFF) {
-    return preferred || 'hbx'; // caller should warn about split range
-  }
-
-  // In overlap period → use preferred, default HBX
+  if (from <= BQ_CUTOFF && to > BQ_CUTOFF) return preferred || 'hbx';
   return preferred || 'hbx';
 }
 
 export function getDateRangeWarning(from: string, to: string, source: DbSource): string | null {
   const BQ_CUTOFF = '2025-09-30';
-  const HBX_START = '2025-10-01';
   if (source === 'redos' && from > BQ_CUTOFF)
     return 'BigQuery (RedOS) has no data after Sep 30, 2025. Switch to HBX for this date range.';
   if (source === 'hbx' && to < '2025-07-15')
@@ -84,27 +83,31 @@ export function getDateRangeWarning(from: string, to: string, source: DbSource):
   return null;
 }
 
-// ─── VEHICLE TYPE MAPPING ─────────────────────────────────────────────────────
-// Unified vehicle type labels → DB-specific values
-// BigQuery (fact_order.fleet_type_sent): als, bls, ecco, hearse, neonatal
-// Snowflake (ASSIGNMENT_AMBULANCE_TYPE): als, bls, ecco, hearse, neonatal (same lowercase)
-
-// Ownership mapping:
+// ─── OWNERSHIP MAPPING (backward-compat shims) ───────────────────────────────
 // BigQuery (fleet_ownership_type): 1P, 2P, 3P, Alliance
-// Snowflake (ASSIGNMENT_PROVIDER_TYPE): Own, Sathi, Non-Sathi, Alliance
-// BigQuery RedOS EXACT values (from DB): 1P, 2P, 3P
+// Snowflake (ASSIGNMENT_PROVIDER_TYPE): OWNED, SAATHI, NON_SAATHI, ALLIANCE
+
 export const OWNERSHIP_TO_BQ: Record<string, string[]> = {
   own: ['1P'], owned: ['1P'], '1p': ['1P'],
-  sathi: ['2P'], '2p': ['2P'],
-  'non-sathi': ['3P'], nonsathi: ['3P'], '3p': ['3P'],
+  sathi: ['2P'], saathi: ['2P'], '2p': ['2P'],
+  'non-sathi': ['3P'], nonsathi: ['3P'], non_saathi: ['3P'], 'non_sathi': ['3P'], '3p': ['3P'],
   alliance: ['Alliance'],
 };
-// HBX Snowflake EXACT values (from DB): OWNED, SAATHI, NON_SAATHI, ALLIANCE
 export const OWNERSHIP_TO_HBX: Record<string, string[]> = {
   own: ['OWNED'], owned: ['OWNED'], '1p': ['OWNED'],
-  sathi: ['SAATHI'], '2p': ['SAATHI'],
-  'non-sathi': ['NON_SAATHI'], nonsathi: ['NON_SAATHI'], '3p': ['NON_SAATHI'],
+  sathi: ['SAATHI'], saathi: ['SAATHI'], '2p': ['SAATHI'],
+  'non-sathi': ['NON_SAATHI'], nonsathi: ['NON_SAATHI'], non_saathi: ['NON_SAATHI'], 'non_sathi': ['NON_SAATHI'], '3p': ['NON_SAATHI'],
   alliance: ['ALLIANCE'],
+};
+
+// ─── STATUS MAPPING (backward-compat shims) ──────────────────────────────────
+// BQ native: fulfilled, cancelled, dispatched, draft
+// HBX native: COMPLETED, CANCELLED, DISPATCHED, PENDING, REASSIGNED
+const BQ_STATUS_MAP: Record<string, string> = {
+  COMPLETED: 'fulfilled', FULFILLED: 'fulfilled',
+  CANCELLED: 'cancelled', DISPATCHED: 'dispatched',
+  ASSIGNED: 'dispatched', PENDING: 'draft', DRAFT: 'draft',
+  REASSIGNED: 'dispatched', IN_PROGRESS: 'dispatched',
 };
 
 // ─── DATE HELPERS ─────────────────────────────────────────────────────────────
@@ -157,7 +160,6 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
   const queryMode = getQueryMode(input);
   const { from, to: baseTo } = resolveDateRange(uiFilters);
   const to = getToDate(uiFilters, aiParsed, baseTo);
-  // DB routing warning
   const dbWarn = getDateRangeWarning(from, to, 'redos');
   if (dbWarn) warnings.push(dbWarn);
 
@@ -185,15 +187,7 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     appliedFilters.push('Creation Date: ' + from + ' to ' + to);
     const statuses = uiFilters.status?.length ? uiFilters.status : aiParsed?.filters?.status;
     if (statuses?.length) {
-      // BQ uses lowercase: fulfilled, cancelled, dispatched, draft
-      // UI shows uppercase: COMPLETED, CANCELLED, DISPATCHED, PENDING
-      const BQ_STATUS_MAP: Record<string, string> = {
-        'COMPLETED': 'fulfilled', 'FULFILLED': 'fulfilled',
-        'CANCELLED': 'cancelled', 'DISPATCHED': 'dispatched',
-        'ASSIGNED': 'dispatched', 'PENDING': 'draft',
-        'REASSIGNED': 'dispatched', 'IN_PROGRESS': 'dispatched',
-      };
-      const bqStatuses = statuses.map((s: string) => BQ_STATUS_MAP[s.toUpperCase()] || s.toLowerCase());
+      const bqStatuses = [...new Set(statuses.map((s: string) => BQ_STATUS_MAP[s.toUpperCase()] || s.toLowerCase()))];
       conditions.push('fo.oms_order_status IN (' + bqStatuses.map((s: string) => "'" + s + "'").join(', ') + ')');
       appliedFilters.push('Status: ' + statuses.join(', '));
     }
@@ -207,8 +201,6 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
 
   const vehicleTypes = uiFilters.vehicleType?.length ? uiFilters.vehicleType : aiParsed?.filters?.vehicleType;
   if (vehicleTypes?.length) {
-    // RedOS vehicle types use format: ALS-standard, ALS-elite, BLS-standard etc
-    // Map generic user input (als, bls) to LIKE patterns
     const VEHICLE_BQ_MAP: Record<string, string> = {
       als: 'ALS', bls: 'BLS', ecco: 'ECO', hearse: 'Hearse', neonatal: 'ASTH',
     };
@@ -221,9 +213,9 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
   }
   const ownershipTypes = uiFilters.ownershipType?.length ? uiFilters.ownershipType : aiParsed?.filters?.ownershipType;
   if (ownershipTypes?.length) {
-    // Map unified labels to BQ-specific values (1P, 2P, 3P)
     const bqOwnership = [...new Set(ownershipTypes.flatMap((o: string) => {
-      const mapped = OWNERSHIP_TO_BQ[o.toLowerCase().replace(/\s/g, '')] || OWNERSHIP_TO_BQ[o.toLowerCase()];
+      const key = o.toLowerCase().replace(/\s/g, '');
+      const mapped = OWNERSHIP_TO_BQ[key] || OWNERSHIP_TO_BQ[o.toLowerCase()];
       return mapped || [o];
     }))];
     conditions.push('fo.fleet_ownership_type IN (' + bqOwnership.map((o: string) => "'" + o + "'").join(', ') + ')');
@@ -244,7 +236,6 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     conditions.push('UPPER(fo.city) IN (' + cityVals.map(v => "'" + v + "'").join(', ') + ')');
     appliedFilters.push('City: ' + cities.join(', ') + ' (' + cityVals.join('/') + ')');
   }
-  // Site / Hospital filter — BQ uses client_v2.branch_name via fleet_v2
   const siteNamesBq = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
   if (siteNamesBq?.length) {
     conditions.push("c.branch_name IN (" + siteNamesBq.map((s: string) => "'" + s.replace(/'/g, "\'") + "'").join(', ') + ")");
@@ -279,12 +270,10 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     suffix = '\nLIMIT ' + maxRows;
   }
 
-  // Detect if stg_order join needed (patient/attender columns)
   const needsStgOrder = selectedDefs.some(c =>
     ['bq_patient_name','bq_attender_name','bq_attender_mobile','bq_patient_mobile',
      'bq_patient_age','bq_patient_gender','bq_caller_mobile'].includes(c.id)
   );
-  // Detect if paymentUpdationDetails CTE needed
   const needsPaymentCte = selectedDefs.some(c => c.id === 'price_override_comments');
 
   const paymentCte = needsPaymentCte
@@ -298,7 +287,6 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     ? '\nLEFT JOIN payment_details pd ON pd.order_id = fo.order_id'
     : '';
 
-  // Replace price_override_comments expr if not using CTE
   const finalSelect = needsPaymentCte
     ? selectPart.replace("STRING_AGG(COALESCE(JSON_VALUE(p.comment), ''), ', ') AS price_override_comments", 'pd.price_override_comments')
     : selectPart;
@@ -333,7 +321,6 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
   const { from, to: baseTo } = resolveDateRange(uiFilters);
   const to = getToDate(uiFilters, aiParsed, baseTo);
   const isFinance = intent === 'finance' || uiFilters.dateField === 'fulfillment';
-  // DB routing warning
   const dbWarn = getDateRangeWarning(from, to, 'hbx');
   if (dbWarn) warnings.push(dbWarn);
 
@@ -347,7 +334,6 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     selectedDefs.push(COLUMN_SCHEMA.find(c => c.id === 'order_id')!);
   }
 
-  // Base WHERE conditions (no date for finance — date goes in outer WHERE via drop_date_ist)
   const baseConditions: string[] = ["fo.META_ORG_ID = '14927ff8-a1f6-49ba-abcb-7bb1cf842d52'"];
   baseConditions.push("fo.META_ORDER_STATUS NOT IN ('CANCELLED', 'DISPUTED')");
   baseConditions.push("(fo.META_SPECIAL_CATEGORY IS NULL OR UPPER(fo.META_SPECIAL_CATEGORY) NOT LIKE '%TEST%')");
@@ -356,10 +342,10 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
   if (!isFinance) {
     baseConditions.push("DATE(CONVERT_TIMEZONE('UTC','Asia/Kolkata', fo.META_BOOKING_CREATED_AT_TIMESTAMP)) BETWEEN '" + from + "' AND '" + to + "'");
     appliedFilters.push('Creation Date: ' + from + ' to ' + to);
-    // Status filter only for non-finance
     const statuses = uiFilters.status?.length ? uiFilters.status : aiParsed?.filters?.status;
     if (statuses?.length) {
-      baseConditions.push('fo.META_ORDER_STATUS IN (' + statuses.map((s: string) => "'" + s + "'").join(', ') + ')');
+      const hbxStatuses = [...new Set(statuses.map((s: string) => s.toUpperCase()))];
+      baseConditions.push('fo.META_ORDER_STATUS IN (' + hbxStatuses.map((s: string) => "'" + s + "'").join(', ') + ')');
       appliedFilters.push('Status: ' + statuses.join(', '));
     }
   } else {
@@ -374,16 +360,15 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
 
   const vehicleTypes = uiFilters.vehicleType?.length ? uiFilters.vehicleType : aiParsed?.filters?.vehicleType;
   if (vehicleTypes?.length) {
-    // HBX vehicle types exact values (lowercase): als, bls, hearse, neonatal
-    const hbxVehicleVals = vehicleTypes.map((v: string) => v.toLowerCase());
+    const hbxVehicleVals = [...new Set(vehicleTypes.map((v: string) => v.toLowerCase()))];
     baseConditions.push('fo.ASSIGNMENT_AMBULANCE_TYPE IN (' + hbxVehicleVals.map((v: string) => "'" + v + "'").join(', ') + ')');
     appliedFilters.push('Vehicle: ' + vehicleTypes.join(', '));
   }
   const ownershipTypes = uiFilters.ownershipType?.length ? uiFilters.ownershipType : aiParsed?.filters?.ownershipType;
   if (ownershipTypes?.length) {
-    // Map unified labels to HBX-specific values
     const hbxOwnership = [...new Set(ownershipTypes.flatMap((o: string) => {
-      const mapped = OWNERSHIP_TO_HBX[o.toLowerCase().replace(/\s/g, '')] || OWNERSHIP_TO_HBX[o.toLowerCase()];
+      const key = o.toLowerCase().replace(/\s/g, '');
+      const mapped = OWNERSHIP_TO_HBX[key] || OWNERSHIP_TO_HBX[o.toLowerCase()];
       return mapped || [o];
     }))];
     baseConditions.push('fo.ASSIGNMENT_PROVIDER_TYPE IN (' + hbxOwnership.map((o: string) => "'" + o + "'").join(', ') + ')');
@@ -391,7 +376,6 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
   }
   const cities = uiFilters.city?.length ? uiFilters.city : aiParsed?.filters?.city;
   if (cities?.length) {
-    // City codes map — DB stores codes (HYD, BLR) not full names
     const CITY_CODE_MAP: Record<string, string[]> = {
       hyderabad: ['HYD'], bangalore: ['BLR'], bengaluru: ['BLR'],
       chennai:   ['CHN', 'MAA'], mumbai: ['BOM', 'MUM'],
@@ -401,14 +385,11 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     };
     const cityVals = [...new Set(cities.flatMap((c: string) => {
       const codes = CITY_CODE_MAP[c.toLowerCase()];
-      // If user typed a code directly (e.g. 'HYD'), use as-is
       return codes ? codes : [c.toUpperCase()];
     }))];
-    // COALESCE: FULFILLMENT_CITY for completed, META_CITY for in-progress/created
     baseConditions.push('UPPER(COALESCE(fo.FULFILLMENT_CITY, fo.META_CITY)) IN (' + cityVals.map(v => "'" + v + "'").join(', ') + ')');
     appliedFilters.push('City: ' + cities.join(', ') + ' (' + cityVals.join('/') + ')');
   }
-  // Site / Hospital filter — uses og.name, forces org join below
   const siteNames = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
   const needsSiteJoin = !!(siteNames?.length);
   if (siteNames?.length) {
@@ -423,7 +404,6 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     appliedFilters.push('Created By: ' + createdByEmail);
   }
 
-  // Optional joins
   const needsOrg      = selectedDefs.some(c => ['site_name', 'site_type'].includes(c.id)) || needsSiteJoin;
   const needsVehicle  = selectedDefs.some(c => c.id === 'vehicle_subtype');
   const needsUserBu   = selectedDefs.some(c => ['created_by_role', 'created_by_department'].includes(c.id));
@@ -433,7 +413,6 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
   if (needsUserBu)  optionalJoins.push('LEFT JOIN (\n  SELECT email, user_type, department FROM blade.core.blade_user_entities_parsed\n  QUALIFY ROW_NUMBER() OVER (PARTITION BY email ORDER BY created_at DESC) = 1\n) bu ON bu.email = fo.META_CREATED_BY');
   const joinsSQL = optionalJoins.length ? '\n' + optionalJoins.join('\n') : '';
 
-  // ── FINANCE SUMMARY: Use CTE matching source-of-truth exactly ──
   if (isFinance && (queryMode === 'summary' || queryMode === 'count')) {
     const agg = (aiParsed as any)?.aggregations;
     const dimMap: Record<string, string> = {
@@ -485,7 +464,6 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     return { sql, dataSource: 'hbx', selectedColumnDefs: selectedDefs, appliedFilters, warnings, isCountQuery: true };
   }
 
-  // ── FUNNEL / DETAIL ──
   const whereClause = baseConditions.map(c => '  ' + c).join('\nAND ');
   let selectPart: string;
   let limitPart: string;
@@ -524,7 +502,6 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
 // ─── PUBLIC API ───────────────────────────────────────────────────────────────
 
 export function buildQuery(input: QueryBuilderInput): BuiltQuery {
-  // Merge AI filters into UI (UI takes precedence)
   if (input.aiParsed?.filters) {
     const ai = input.aiParsed.filters;
     if (!input.uiFilters.status?.length && ai.status?.length)               input.uiFilters.status = ai.status;
@@ -539,14 +516,9 @@ export function buildQuery(input: QueryBuilderInput): BuiltQuery {
     if (!input.uiFilters.createdByEmail && (ai as any).createdByEmail) input.uiFilters.createdByEmail = (ai as any).createdByEmail;
   }
 
-  // ── AUTO DATABASE ROUTING based on date range ──
-  // BigQuery: up to Sep 30, 2025 | Snowflake: Oct 1, 2025 onwards
-  // If user hasn't manually selected a source via UI toggle, auto-route
   const { from, to } = resolveDateRange(input.uiFilters);
   const autoSource = routeDatabase(from, to, input.aiParsed?.dataSource === 'redos' ? 'redos' : 'hbx');
 
-  // Only auto-override if AI/system is deciding (not manual user toggle)
-  // The aiParsed.dataSource being 'auto' means let the system decide
   if ((input.aiParsed as any)?.dataSource === 'auto' || !input.aiParsed) {
     input.dataSource = autoSource;
   }
