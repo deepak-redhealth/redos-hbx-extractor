@@ -190,9 +190,7 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
       conditions.push("LOWER(fo.oms_order_status) NOT IN ('cancelled', 'disputed')");
       appliedFilters.push('Finance: Excl. Cancelled/Disputed');
     }
-    conditions.push('fo.total_fare > 0');
     appliedFilters.push('Finance Date: ' + from + ' to ' + to);
-    appliedFilters.push('Finance: Excl. Free trips');
   } else {
     conditions.push("DATE(TIMESTAMP_MILLIS(fo.booking_created_by_epoch), 'Asia/Kolkata') BETWEEN '" + from + "' AND '" + to + "'");
     appliedFilters.push('Creation Date: ' + from + ' to ' + to);
