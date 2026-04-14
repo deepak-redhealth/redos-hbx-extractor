@@ -114,6 +114,8 @@ const DATE_PRESETS = [
 ];
 
 const CITIES = ['Hyderabad', 'Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata', 'Noida', 'Gurugram'];
+const DEPARTMENTS = ['Digital', 'Hospital', 'Field Sales', 'Corporate and Others', 'Test Cases'];
+const CITY_GROUPS = ['DIGITAL', 'CHN', 'DLH-NCR', 'Tri-City', 'MUM'];
 
 // Top hospitals/sites from both databases (HBX: og.name | BQ: c.branch_name)
 const SITES = [
@@ -406,6 +408,46 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
               </label>
             ))}
           </div>
+        </section>
+
+        {/* -- City Group -- */}
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>City Group</h3>
+          <div className={styles.checkGroup}>
+            {CITY_GROUPS.map(g => (
+              <label key={g} className={styles.checkRow}>
+                <input type="checkbox"
+                  checked={(f.cityGroup || []).includes(g)}
+                  onChange={() => onChange(set(f, 'cityGroup', toggleArr(f.cityGroup, g)))}
+                  className={styles.check}
+                />
+                <span className={styles.checkLabel}>{g}</span>
+              </label>
+            ))}
+          </div>
+          {(f.cityGroup?.length ?? 0) > 0 && (
+            <button className={styles.clearBtn} onClick={() => onChange(set(f, 'cityGroup', []))}>Clear</button>
+          )}
+        </section>
+
+        {/* -- Department -- */}
+        <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Department <span style={{ fontSize: 11, opacity: 0.7 }}>(REDos)</span></h3>
+          <div className={styles.checkGroup}>
+            {DEPARTMENTS.map(d => (
+              <label key={d} className={styles.checkRow}>
+                <input type="checkbox"
+                  checked={(f.department || []).includes(d)}
+                  onChange={() => onChange(set(f, 'department', toggleArr(f.department, d)))}
+                  className={styles.check}
+                />
+                <span className={styles.checkLabel}>{d}</span>
+              </label>
+            ))}
+          </div>
+          {(f.department?.length ?? 0) > 0 && (
+            <button className={styles.clearBtn} onClick={() => onChange(set(f, 'department', []))}>Clear</button>
+          )}
         </section>
 
         {/* ─ Revenue ─ */}

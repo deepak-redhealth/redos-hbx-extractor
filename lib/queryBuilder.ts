@@ -36,7 +36,9 @@ export interface UIFilters {
   createdByEmail?: string;
   countOnly?: boolean;
   siteName?: string[];
-  orderClassification?: string[];
+  orderClassification?: string[];
+  department?: string[];
+  cityGroup?: string[];
 }
 
 export interface QueryBuilderInput {
@@ -242,7 +244,28 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     conditions.push('UPPER(fo.city) IN (' + cityVals.map(v => "'" + v + "'").join(', ') + ')');
     appliedFilters.push('City: ' + cities.join(', ') + ' (' + cityVals.join('/') + ')');
   }
-  const siteNamesBq = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
+
+  // Department filter (BQ)
+  if (uiFilters.department?.length) {
+    const def = getColumnById('department');
+    if (def?.redosExpr) {
+      const caseBody = def.redosExpr.replace(/\s+AS\s+department\s*$/i, '').trim();
+      const vals = uiFilters.department.map(v => "'" + v.replace(/'/g, "''") + "'").join(', ');
+      conditions.push('(' + caseBody + ') IN (' + vals + ')');
+      appliedFilters.push('Department: ' + uiFilters.department.join(', '));
+    }
+  }
+
+  // City Group filter (BQ)
+  if (uiFilters.cityGroup?.length) {
+    const def = getColumnById('city_group');
+    if (def?.redosExpr) {
+      const caseBody = def.redosExpr.replace(/\s+AS\s+city_group\s*$/i, '').trim();
+      const vals = uiFilters.cityGroup.map(v => "'" + v.replace(/'/g, "''") + "'").join(', ');
+      conditions.push('(' + caseBody + ') IN (' + vals + ')');
+      appliedFilters.push('City Group: ' + uiFilters.cityGroup.join(', '));
+    }
+  }  const siteNamesBq = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
   if (siteNamesBq?.length) {
     const resolvedSiteIdsBq = (uiFilters as any).resolvedSiteIds as string[] | undefined;
     if (resolvedSiteIdsBq?.length) {
