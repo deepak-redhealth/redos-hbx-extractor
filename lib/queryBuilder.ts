@@ -1,12 +1,12 @@
-﻿// lib/queryBuilder.ts â€” Red Health Data Hub Query Builder
+// lib/queryBuilder.ts — Red Health Data Hub Query Builder
 // Funnel logic  = creation date (both BigQuery + Snowflake)
 // Finance logic = COALESCE(drop_date, FULFILLMENT_FULFILLED_AT_IST) via CTE
 //
 // The FilterPanel now emits DB-native filter values per dataSource:
-//   â€¢ redos (BigQuery):  statuses = fulfilled|cancelled|dispatched|draft
+//   • redos (BigQuery):  statuses = fulfilled|cancelled|dispatched|draft
 //                        ownership = 1P|2P|3P|Alliance
 //                        vehicleType = als|bls|ecco|hearse|neonatal
-//   â€¢ hbx   (Snowflake): statuses = COMPLETED|CANCELLED|DISPATCHED|PENDING|REASSIGNED
+//   • hbx   (Snowflake): statuses = COMPLETED|CANCELLED|DISPATCHED|PENDING|REASSIGNED
 //                        ownership = OWNED|SAATHI|NON_SAATHI|ALLIANCE
 //                        vehicleType = als|bls|ecco|hearse|neonatal
 // Mapping tables below stay backward-compatible with the previous UI values
@@ -58,10 +58,10 @@ export interface BuiltQuery {
   isCountQuery: boolean;
 }
 
-// â”€â”€â”€ DATABASE ROUTING RULES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── DATABASE ROUTING RULES ──────────────────────────────────────────────────
 // BigQuery (RedOS): data available up to Sep 30, 2025
 // Snowflake (HBX):  data available from Oct 1, 2025
-// Overlap period:   Jul 15, 2025 â€“ Sep 30, 2025 (both available)
+// Overlap period:   Jul 15, 2025 – Sep 30, 2025 (both available)
 
 export function routeDatabase(from: string, to: string, preferred?: DbSource): DbSource {
   const BQ_CUTOFF     = '2025-09-30';
@@ -83,7 +83,7 @@ export function getDateRangeWarning(from: string, to: string, source: DbSource):
   return null;
 }
 
-// â”€â”€â”€ OWNERSHIP MAPPING (backward-compat shims) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── OWNERSHIP MAPPING (backward-compat shims) ───────────────────────────────
 // BigQuery (fleet_ownership_type): 1P, 2P, 3P, Alliance
 // Snowflake (ASSIGNMENT_PROVIDER_TYPE): OWNED, SAATHI, NON_SAATHI, ALLIANCE
 
@@ -100,7 +100,7 @@ export const OWNERSHIP_TO_HBX: Record<string, string[]> = {
   alliance: ['ALLIANCE'],
 };
 
-// â”€â”€â”€ STATUS MAPPING (backward-compat shims) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── STATUS MAPPING (backward-compat shims) ──────────────────────────────────
 // BQ native: fulfilled, cancelled, dispatched, draft
 // HBX native: COMPLETED, CANCELLED, DISPATCHED, PENDING, REASSIGNED
 const BQ_STATUS_MAP: Record<string, string> = {
@@ -110,7 +110,7 @@ const BQ_STATUS_MAP: Record<string, string> = {
   REASSIGNED: 'dispatched', IN_PROGRESS: 'dispatched',
 };
 
-// â”€â”€â”€ DATE HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── DATE HELPERS ─────────────────────────────────────────────────────────────
 
 function resolveDateRange(filters: UIFilters): { from: string; to: string } {
   if (filters.dateFrom && filters.dateTo) return { from: filters.dateFrom, to: filters.dateTo };
@@ -150,7 +150,7 @@ function getQueryMode(input: QueryBuilderInput): 'detail' | 'summary' | 'count' 
   return 'detail';
 }
 
-// â”€â”€â”€ BIGQUERY (REDOS) QUERY BUILDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── BIGQUERY (REDOS) QUERY BUILDER ──────────────────────────────────────────
 
 function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
   const { selectedColumns, uiFilters, aiParsed, maxRows = 50000 } = input;
@@ -176,20 +176,29 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
   const conditions: string[] = ["fo.order_id NOT IN ('RED_V96L5J4X')"];
   const isFinance = intent === 'finance' || uiFilters.dateField === 'fulfillment';
 
+    const statusInput = uiFilters.status?.length ? uiFilters.status : aiParsed?.filters?.status;
+  const bqStatuses = statusInput?.length
+    ? [...new Set(statusInput.map((s: string) => (BQ_STATUS_MAP[s.toUpperCase()] || s.toLowerCase()).toLowerCase()))]
+    : null;
+
   if (isFinance) {
     conditions.push("DATE(TIMESTAMP_MILLIS(COALESCE(fo.dispatch_dropped_at, fo.dispatch_fulfilling_at, fo.booking_created_by_epoch)), 'Asia/Kolkata') BETWEEN '" + from + "' AND '" + to + "'");
-    conditions.push("fo.oms_order_status NOT IN ('CANCELLED', 'DISPUTED')");
+    if (bqStatuses?.length) {
+      conditions.push('LOWER(fo.oms_order_status) IN (' + bqStatuses.map((s: string) => "'" + s + "'").join(', ') + ')');
+      appliedFilters.push('Status: ' + statusInput!.join(', '));
+    } else {
+      conditions.push("LOWER(fo.oms_order_status) NOT IN ('cancelled', 'disputed')");
+      appliedFilters.push('Finance: Excl. Cancelled/Disputed');
+    }
     conditions.push('fo.total_fare > 0');
     appliedFilters.push('Finance Date: ' + from + ' to ' + to);
-    appliedFilters.push('Finance: Excl. Cancelled/Disputed/Free');
+    appliedFilters.push('Finance: Excl. Free trips');
   } else {
     conditions.push("DATE(TIMESTAMP_MILLIS(fo.booking_created_by_epoch), 'Asia/Kolkata') BETWEEN '" + from + "' AND '" + to + "'");
     appliedFilters.push('Creation Date: ' + from + ' to ' + to);
-    const statuses = uiFilters.status?.length ? uiFilters.status : aiParsed?.filters?.status;
-    if (statuses?.length) {
-      const bqStatuses = [...new Set(statuses.map((s: string) => BQ_STATUS_MAP[s.toUpperCase()] || s.toLowerCase()))];
-      conditions.push('fo.oms_order_status IN (' + bqStatuses.map((s: string) => "'" + s + "'").join(', ') + ')');
-      appliedFilters.push('Status: ' + statuses.join(', '));
+    if (bqStatuses?.length) {
+      conditions.push('LOWER(fo.oms_order_status) IN (' + bqStatuses.map((s: string) => "'" + s + "'").join(', ') + ')');
+      appliedFilters.push('Status: ' + statusInput!.join(', '));
     }
   }
 
@@ -248,8 +257,8 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
       appliedFilters.push('Site: ' + siteNamesBq.join(', ') + ' (by name)');
     }
   }
-  if (uiFilters.minRevenue != null) { conditions.push('fo.total_fare >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: â‚¹' + uiFilters.minRevenue); }
-  if (uiFilters.maxRevenue != null) { conditions.push('fo.total_fare <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: â‚¹' + uiFilters.maxRevenue); }
+  if (uiFilters.minRevenue != null) { conditions.push('fo.total_fare >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: ₹' + uiFilters.minRevenue); }
+  if (uiFilters.maxRevenue != null) { conditions.push('fo.total_fare <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: ₹' + uiFilters.maxRevenue); }
 
   const whereClause = conditions.map(c => '  ' + c).join('\nAND ');
 
@@ -298,7 +307,7 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     ? selectPart.replace("STRING_AGG(COALESCE(JSON_VALUE(p.comment), ''), ', ') AS price_override_comments", 'pd.price_override_comments')
     : selectPart;
 
-  const sql = '-- RedOS (BigQuery) â€” ' + queryMode.toUpperCase() + ' QUERY â€” Generated by Red Health Data Hub\n' +
+  const sql = '-- RedOS (BigQuery) — ' + queryMode.toUpperCase() + ' QUERY — Generated by Red Health Data Hub\n' +
     '-- Intent: ' + intent + '\n-- Filters: ' + appliedFilters.length + ' applied\n\n' +
     'WITH fo_base AS (\n  SELECT *\n  FROM `redos-prod.rdp.fact_order`\n  WHERE order_id NOT IN (\'RED_V96L5J4X\')\n),\n' +
     'addon_summary AS (\n  SELECT order_id, SUM(CAST(JSON_EXTRACT_SCALAR(x, \'$.price\') AS INT64)) / 100 AS total_addon_price\n  FROM fo_base, UNNEST(JSON_EXTRACT_ARRAY(addons)) AS x GROUP BY order_id\n)' +
@@ -317,7 +326,7 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
   return { sql, dataSource: 'redos', selectedColumnDefs: selectedDefs, appliedFilters, warnings, isCountQuery: queryMode !== 'detail' };
 }
 
-// â”€â”€â”€ SNOWFLAKE (HBX) QUERY BUILDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SNOWFLAKE (HBX) QUERY BUILDER ───────────────────────────────────────────
 
 function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
   const { selectedColumns, uiFilters, aiParsed, maxRows = 50000 } = input;
@@ -410,8 +419,8 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
       appliedFilters.push('Site: ' + siteNames.join(', ') + ' (by name)');
     }
   }
-  if (uiFilters.minRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: â‚¹' + uiFilters.minRevenue); }
-  if (uiFilters.maxRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: â‚¹' + uiFilters.maxRevenue); }
+  if (uiFilters.minRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: ₹' + uiFilters.minRevenue); }
+  if (uiFilters.maxRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: ₹' + uiFilters.maxRevenue); }
   const createdByEmail = uiFilters.createdByEmail ?? (aiParsed as any)?.filters?.createdByEmail;
   if (createdByEmail) {
     baseConditions.push("LOWER(COALESCE(fo.META_BOOKING_CREATED_BY, fo.META_ENQUIRY_CREATED_BY, fo.META_CREATED_BY)) ILIKE '%" + createdByEmail.toLowerCase() + "%'");
@@ -454,7 +463,7 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     const groupBy = dims.join(', ');
 
     const sql =
-      '-- HBX (Snowflake) â€” FINANCE SUMMARY QUERY â€” Generated by Red Health Data Hub\n' +
+      '-- HBX (Snowflake) — FINANCE SUMMARY QUERY — Generated by Red Health Data Hub\n' +
       '-- Intent: finance | Date Logic: Finance (drop_date_ist via CTE)\n' +
       '-- Filters: ' + appliedFilters.length + ' applied\n\n' +
       'WITH base AS (\n' +
@@ -503,7 +512,7 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
   }
 
   const sql =
-    '-- HBX (Snowflake) â€” ' + queryMode.toUpperCase() + ' QUERY â€” Generated by Red Health Data Hub\n' +
+    '-- HBX (Snowflake) — ' + queryMode.toUpperCase() + ' QUERY — Generated by Red Health Data Hub\n' +
     '-- Intent: ' + intent + ' | Date Logic: Funnel (creation)\n' +
     '-- Filters: ' + appliedFilters.length + ' applied\n\n' +
     'SELECT\n' + selectPart + '\n\n' +
@@ -513,7 +522,7 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
   return { sql, dataSource: 'hbx', selectedColumnDefs: selectedDefs, appliedFilters, warnings, isCountQuery: queryMode !== 'detail' };
 }
 
-// â”€â”€â”€ PUBLIC API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── PUBLIC API ───────────────────────────────────────────────────────────────
 
 export function buildQuery(input: QueryBuilderInput): BuiltQuery {
   if (input.aiParsed?.filters) {
