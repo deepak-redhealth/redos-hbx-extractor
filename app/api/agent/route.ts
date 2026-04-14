@@ -81,7 +81,24 @@ async function executeTool(name: string, input: any): Promise<string> {
       const preview = rows.slice(0, 200);
       const cols = Object.keys(preview[0]);
       const dataRows = preview.map((r: any) => cols.map(c => String(r[c] ?? '').substring(0, 40)).join(' | ')).join('\n');
-      return `${rowCount} total rows (showing up to 200):\n${cols.join(' | ')}\n${'-'.repeat(60)}\n${dataRows}`;
+
+      // Deterministic aggregates over ALL rows (not just preview) - prevents LLM arithmetic hallucination
+      const fmtINR = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+      const aggLines: string[] = [];
+      for (const col of cols) {
+        const vals = rows.map((r: any) => r[col]).filter((v: any) => v !== null && v !== undefined && v !== '' && !isNaN(Number(v))).map((v: any) => Number(v));
+        if (vals.length < Math.max(1, Math.floor(rows.length * 0.5))) continue; // skip cols that aren't mostly numeric
+        const sum = vals.reduce((a: number, b: number) => a + b, 0);
+        const avg = sum / vals.length;
+        const min = Math.min(...vals);
+        const max = Math.max(...vals);
+        aggLines.push(`  ${col}: sum=${fmtINR(sum)} | avg=${fmtINR(avg)} | min=${fmtINR(min)} | max=${fmtINR(max)} | n=${vals.length}`);
+      }
+      const aggBlock = aggLines.length
+        ? `=== COMPUTED AGGREGATES (authoritative - use these EXACT values in your response, do NOT recompute) ===\nTotal rows: ${rowCount}\n${aggLines.join('\n')}\n=== END AGGREGATES ===\n\n`
+        : '';
+
+      return `${aggBlock}${rowCount} total rows (showing up to 200):\n${cols.join(' | ')}\n${'-'.repeat(60)}\n${dataRows}`;
     }
 
     if (name === 'cross_db_join') {
@@ -167,7 +184,16 @@ WORKFLOW:
 6. Summarize findings clearly with numbers
 7. Suggest a useful follow-up question
 
-Always be direct. Lead with the answer, then the data.`;
+Always be direct. Lead with the answer, then the data.
+
+CRITICAL - NUMERIC CORRECTNESS:
+When a run_sql result includes a "=== COMPUTED AGGREGATES ===" block, those numbers are authoritative.
+- Use them VERBATIM in your response - do not recompute, round, or re-derive.
+- If the user asks for a total/sum/average, read it directly from the aggregates block.
+- Never perform arithmetic on the displayed row preview - the preview is truncated to 200 rows; the aggregates block covers all rows.
+- Format rupees by prepending the rune character (U+20B9) and the digit string from the aggregates.
+- If you need a total that is not in the aggregates block (e.g. a sum filtered to a subset), issue another run_sql with SUM(...) rather than adding numbers yourself.
+Violating this rule causes silent data corruption. The aggregates block is the single source of truth.`;
 
 export async function POST(req: NextRequest) {
   const authError = verifyAuth(req);
