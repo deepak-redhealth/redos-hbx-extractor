@@ -238,8 +238,15 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
   }
   const siteNamesBq = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
   if (siteNamesBq?.length) {
-    conditions.push("c.branch_name IN (" + siteNamesBq.map((s: string) => "'" + s.replace(/'/g, "\'") + "'").join(', ') + ")");
-    appliedFilters.push('Site: ' + siteNamesBq.join(', '));
+    const resolvedSiteIdsBq = (uiFilters as any).resolvedSiteIds as string[] | undefined;
+    if (resolvedSiteIdsBq?.length) {
+      conditions.push("c.branch_id IN (" + resolvedSiteIdsBq.map((id: string) => "'" + id.replace(/'/g, "''") + "'").join(', ') + ")");
+      appliedFilters.push('Site: ' + siteNamesBq.join(', ') + ' (by ID)');
+    } else {
+      const norm = siteNamesBq.map((s: string) => "'" + s.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/'/g, "''") + "'");
+      conditions.push("REGEXP_REPLACE(UPPER(c.branch_name), r'[^A-Z0-9]', '') IN (" + norm.join(', ') + ")");
+      appliedFilters.push('Site: ' + siteNamesBq.join(', ') + ' (by name)');
+    }
   }
   if (uiFilters.minRevenue != null) { conditions.push('fo.total_fare >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: â‚¹' + uiFilters.minRevenue); }
   if (uiFilters.maxRevenue != null) { conditions.push('fo.total_fare <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: â‚¹' + uiFilters.maxRevenue); }
@@ -393,8 +400,15 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
   const siteNames = uiFilters.siteName?.length ? uiFilters.siteName : (aiParsed?.filters as any)?.siteName;
   const needsSiteJoin = !!(siteNames?.length);
   if (siteNames?.length) {
-    baseConditions.push("og.name IN (" + siteNames.map((s: string) => "'" + s.replace(/'/g, "\'") + "'").join(', ') + ")");
-    appliedFilters.push('Site: ' + siteNames.join(', '));
+    const resolvedSiteIdsHbx = (uiFilters as any).resolvedSiteIds as string[] | undefined;
+    if (resolvedSiteIdsHbx?.length) {
+      baseConditions.push("og.site_id IN (" + resolvedSiteIdsHbx.map((id: string) => "'" + id.replace(/'/g, "''") + "'").join(', ') + ")");
+      appliedFilters.push('Site: ' + siteNames.join(', ') + ' (by ID)');
+    } else {
+      const norm = siteNames.map((s: string) => "'" + s.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/'/g, "''") + "'");
+      baseConditions.push("REGEXP_REPLACE(UPPER(og.name), '[^A-Z0-9]', '') IN (" + norm.join(', ') + ")");
+      appliedFilters.push('Site: ' + siteNames.join(', ') + ' (by name)');
+    }
   }
   if (uiFilters.minRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT >= ' + uiFilters.minRevenue * 100); appliedFilters.push('Min Revenue: â‚¹' + uiFilters.minRevenue); }
   if (uiFilters.maxRevenue != null) { baseConditions.push('fo.PAYMENTS_TOTAL_ORDER_AMOUNT <= ' + uiFilters.maxRevenue * 100); appliedFilters.push('Max Revenue: â‚¹' + uiFilters.maxRevenue); }
