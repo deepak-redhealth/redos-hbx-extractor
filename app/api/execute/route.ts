@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const startTime = Date.now();
     let rows: Record<string, any>[];
     let rowCount: number;
-    console.log('[execute] dataSource=', dataSource, '| sqlPreview=', sql.slice(0, 500));
+    console.log('[execute] dataSource=', dataSource, '| sqlPreview=', sql.slice(0, 3000));
 
     if (dataSource === 'redos') {
       ({ rows, rowCount } = await executeRedosQuery(sql));
