@@ -19,3 +19,10 @@ migrate_users.js
 check.js
 vercel_users.txt
 hash.txt
+# local helper scripts (not checked in)
+*.ps1
+*.bak-*
+
+# local dev helper scripts + timestamped backups
+*.ps1
+*.bak-*
