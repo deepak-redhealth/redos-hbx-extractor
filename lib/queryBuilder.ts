@@ -15,6 +15,8 @@
 
 import { ColumnDef, COLUMN_SCHEMA, getColumnById } from './columnSchema';
 import { ParsedIntent } from './aiParser';
+
+import { BQ_CITY_GROUP_SQL, BQ_DEPARTMENT_SQL, HBX_CITY_GROUP_SQL } from './computedColumns';
 
 export type DbSource = 'redos' | 'hbx';
 
@@ -311,6 +313,10 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     'addon_summary AS (\n  SELECT order_id, SUM(CAST(JSON_EXTRACT_SCALAR(x, \'$.price\') AS INT64)) / 100 AS total_addon_price\n  FROM fo_base, UNNEST(JSON_EXTRACT_ARRAY(addons)) AS x GROUP BY order_id\n)' +
     paymentCte + '\n' +
     'SELECT\n' + finalSelect + '\n\n' +
+    BQ_CITY_GROUP_SQL + ',\n' +
+
+    BQ_DEPARTMENT_SQL + ',\n' +
+
     'FROM fo_base fo\n' +
     'LEFT JOIN `redos-prod.public.fleet_v2` flt ON flt.id = fo.assigned_fleet_id\n' +
     'LEFT JOIN `redos-prod.public.users_v2` ud ON ud.email = fo.last_dispatched_by_email\n' +
