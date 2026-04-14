@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { buildQuery } from '@/lib/queryBuilder';
 import { parseNaturalLanguage } from '@/lib/aiParser';
 import { executeRedosQuery } from '@/lib/bigquery';
