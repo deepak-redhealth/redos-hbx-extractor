@@ -5,6 +5,7 @@
 
 import { executeRedosQuery } from './bigquery';
 import { executeHbxQuery } from './snowflake';
+
 export interface SiteEntry {
   displayName: string;
   redosId?: string;
