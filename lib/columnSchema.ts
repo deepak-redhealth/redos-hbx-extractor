@@ -485,7 +485,6 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
     ELSE fo.city
   END AS city_group`,
     hbxExpr: `CASE
-    WHEN UPPER(IFNULL(fo.META_VERTICAL_TYPE_CITY_DIGITAL_SEGG_CREATED,'')) = 'DIGITAL' THEN 'DIGITAL'
     WHEN fo.META_CITY IN ('CHGL','VIPU')                          THEN 'CHN'
     WHEN fo.META_CITY IN ('GGN','GZB','FDB','NOI','DLH')          THEN 'DLH-NCR'
     WHEN fo.META_CITY IN ('MOHL','CDG','PCK')                     THEN 'Tri-City'
