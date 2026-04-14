@@ -249,11 +249,11 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
   if (siteNamesBq?.length) {
     const resolvedSiteIdsBq = (uiFilters as any).resolvedSiteIds as string[] | undefined;
     if (resolvedSiteIdsBq?.length) {
-      conditions.push("fo.order_attributed_to_branch_id IN (" + resolvedSiteIdsBq.map((id: string) => "'" + id.replace(/'/g, "''") + "'").join(', ') + ")");
+      conditions.push("fo.reports_order_source_id IN (" + resolvedSiteIdsBq.map((id: string) => "'" + id.replace(/'/g, "''") + "'").join(', ') + ")");
       appliedFilters.push('Site: ' + siteNamesBq.join(', ') + ' (by ID)');
     } else {
       const norm = siteNamesBq.map((s: string) => "'" + s.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/'/g, "''") + "'");
-      conditions.push("REGEXP_REPLACE(UPPER(fo.order_attributed_to_branch_name), r'[^A-Z0-9]', '') IN (" + norm.join(', ') + ")");
+      conditions.push("REGEXP_REPLACE(UPPER(fo.reports_order_source_name), r'[^A-Z0-9]', '') IN (" + norm.join(', ') + ")");
       appliedFilters.push('Site: ' + siteNamesBq.join(', ') + ' (by name)');
     }
   }
