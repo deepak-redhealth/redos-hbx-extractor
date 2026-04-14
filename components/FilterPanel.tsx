@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 // components/FilterPanel.tsx
-// Source-aware filter panel — renders BigQuery (REDos) or Snowflake (HBX)
+// Source-aware filter panel â€” renders BigQuery (REDos) or Snowflake (HBX)
 // native values based on the selected data source.
 
 import { useEffect, useState } from 'react';
@@ -15,11 +15,11 @@ interface Props {
   dataSource: DbSource;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Per-source filter configuration
 // The `value` is the DB-native value sent to the query builder (no mapping needed).
 // The `label` is what the user sees.
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface Opt { value: string; label: string; }
 
@@ -43,7 +43,7 @@ const SOURCE_CONFIG: Record<DbSource, SourceConfig> = {
       { value: 'dispatched', label: 'Dispatched' },
       { value: 'draft',      label: 'Draft (Pending)' },
     ],
-    // BQ fleet_type_sent — LIKE prefix match handled in queryBuilder
+    // BQ fleet_type_sent â€” LIKE prefix match handled in queryBuilder
     vehicleTypes: [
       { value: 'als',      label: 'ALS (ALS-*)' },
       { value: 'bls',      label: 'BLS (BLS-*)' },
@@ -77,7 +77,7 @@ const SOURCE_CONFIG: Record<DbSource, SourceConfig> = {
       { value: 'PENDING',    label: 'Pending' },
       { value: 'REASSIGNED', label: 'Reassigned' },
     ],
-    // HBX ASSIGNMENT_AMBULANCE_TYPE — stored lowercase
+    // HBX ASSIGNMENT_AMBULANCE_TYPE â€” stored lowercase
     vehicleTypes: [
       { value: 'als',      label: 'ALS' },
       { value: 'bls',      label: 'BLS' },
@@ -102,7 +102,7 @@ const SOURCE_CONFIG: Record<DbSource, SourceConfig> = {
   },
 };
 
-// Shared (same for both DBs — codes / full names are normalized in queryBuilder)
+// Shared (same for both DBs â€” codes / full names are normalized in queryBuilder)
 const DATE_PRESETS = [
   { value: 'today',      label: 'Today' },
   { value: 'yesterday',  label: 'Yesterday' },
@@ -147,7 +147,7 @@ const SITES = [
   'Yashoda Hospital- Kaushambi, Ghaziabad', 'Yashoda Kaushambi',
 ].sort();
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function set(filters: any, key: string, val: any) { return { ...filters, [key]: val }; }
 
 function toggleArr(arr: string[] | undefined, val: string): string[] {
@@ -163,12 +163,24 @@ function pruneToValid(arr: string[] | undefined, validValues: string[]): string[
   return next.length ? next : undefined;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function FilterPanel({ filters, onChange, dataSource }: Props) {
   const f = filters;
   const cfg = SOURCE_CONFIG[dataSource];
   const isCustomDate = !f.datePreset || f.datePreset === 'custom';
   const [siteSearch, setSiteSearch] = useState('');
+  const [siteOptions, setSiteOptions] = useState<string[]>(SITES);
+  useEffect(() => {
+    fetch('/api/sites')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.sites?.length) {
+          const names: string[] = d.sites.map((s: any) => s.displayName).filter(Boolean);
+          if (names.length) setSiteOptions(names);
+        }
+      })
+      .catch(() => { /* keep hardcoded fallback */ });
+  }, []);
 
   // When data source flips, drop any previously-selected values that aren't
   // valid for the new source (e.g. 'COMPLETED' selected under HBX becomes
@@ -206,15 +218,15 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
             fontWeight: 600,
           }}
         >
-          {cfg.title} · {cfg.badge}
+          {cfg.title} Â· {cfg.badge}
         </span>
       </div>
 
       <div className={styles.grid}>
 
-        {/* ─ Date Filters ─ */}
+        {/* â”€ Date Filters â”€ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>📅 Date Filter</h3>
+          <h3 className={styles.sectionTitle}>ðŸ“… Date Filter</h3>
 
           <div className={styles.field}>
             <label className={styles.label}>Date Logic</label>
@@ -265,10 +277,10 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           )}
         </section>
 
-        {/* ─ Order Status (source-aware) ─ */}
+        {/* â”€ Order Status (source-aware) â”€ */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>
-            📋 Order Status <span style={{ fontSize: 11, opacity: 0.7 }}>({cfg.title})</span>
+            ðŸ“‹ Order Status <span style={{ fontSize: 11, opacity: 0.7 }}>({cfg.title})</span>
           </h3>
           <div className={styles.checkGroup}>
             {cfg.statuses.map(s => (
@@ -287,10 +299,10 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           )}
         </section>
 
-        {/* ─ Vehicle Type (source-aware) ─ */}
+        {/* â”€ Vehicle Type (source-aware) â”€ */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>
-            🚑 Vehicle Type <span style={{ fontSize: 11, opacity: 0.7 }}>({cfg.title})</span>
+            ðŸš‘ Vehicle Type <span style={{ fontSize: 11, opacity: 0.7 }}>({cfg.title})</span>
           </h3>
           <div className={styles.checkGroup}>
             {cfg.vehicleTypes.map(v => (
@@ -306,10 +318,10 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           </div>
         </section>
 
-        {/* ─ Ownership (source-aware) ─ */}
+        {/* â”€ Ownership (source-aware) â”€ */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>
-            🏷️ Ownership Type <span style={{ fontSize: 11, opacity: 0.7 }}>({cfg.title})</span>
+            ðŸ·ï¸ Ownership Type <span style={{ fontSize: 11, opacity: 0.7 }}>({cfg.title})</span>
           </h3>
           <div className={styles.checkGroup}>
             {cfg.ownership.map(o => (
@@ -325,9 +337,9 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           </div>
         </section>
 
-        {/* ─ Order Classification ─ */}
+        {/* â”€ Order Classification â”€ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>🏷️ Order Classification</h3>
+          <h3 className={styles.sectionTitle}>ðŸ·ï¸ Order Classification</h3>
           <div className={styles.checkGroup}>
             {cfg.orderClassification.map(c => (
               <label key={c.value} className={styles.checkRow}>
@@ -346,9 +358,9 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           )}
         </section>
 
-        {/* ─ Site / Hospital ─ */}
+        {/* â”€ Site / Hospital â”€ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>🏥 Site / Hospital</h3>
+          <h3 className={styles.sectionTitle}>ðŸ¥ Site / Hospital</h3>
           <input
             className={styles.numInput}
             type="text"
@@ -358,7 +370,7 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
             style={{ marginBottom: '8px', width: '100%' }}
           />
           <div className={styles.checkGroup} style={{ maxHeight: '180px', overflowY: 'auto' }}>
-            {SITES
+            {siteOptions
               .filter(s => !siteSearch || s.toLowerCase().includes(siteSearch.toLowerCase()))
               .map(site => (
                 <label key={site} className={styles.checkRow}>
@@ -379,9 +391,9 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           )}
         </section>
 
-        {/* ─ City ─ */}
+        {/* â”€ City â”€ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>🏙️ City</h3>
+          <h3 className={styles.sectionTitle}>ðŸ™ï¸ City</h3>
           <div className={styles.checkGroup}>
             {CITIES.map(c => (
               <label key={c} className={styles.checkRow}>
@@ -396,20 +408,20 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           </div>
         </section>
 
-        {/* ─ Revenue ─ */}
+        {/* â”€ Revenue â”€ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>💰 Revenue Range (₹)</h3>
+          <h3 className={styles.sectionTitle}>ðŸ’° Revenue Range (â‚¹)</h3>
           <div className={styles.rangeRow}>
             <div className={styles.field}>
-              <label className={styles.label}>Min (₹)</label>
+              <label className={styles.label}>Min (â‚¹)</label>
               <input className={styles.numInput} type="number" placeholder="e.g. 500"
                 value={f.minRevenue || ''} min={0}
                 onChange={e => onChange(set(f, 'minRevenue', e.target.value ? Number(e.target.value) : undefined))}
               />
             </div>
-            <div className={styles.rangeSep}>—</div>
+            <div className={styles.rangeSep}>â€”</div>
             <div className={styles.field}>
-              <label className={styles.label}>Max (₹)</label>
+              <label className={styles.label}>Max (â‚¹)</label>
               <input className={styles.numInput} type="number" placeholder="e.g. 10000"
                 value={f.maxRevenue || ''} min={0}
                 onChange={e => onChange(set(f, 'maxRevenue', e.target.value ? Number(e.target.value) : undefined))}
@@ -418,9 +430,9 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           </div>
         </section>
 
-        {/* ─ Advanced ─ */}
+        {/* â”€ Advanced â”€ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>⚙️ Advanced Options</h3>
+          <h3 className={styles.sectionTitle}>âš™ï¸ Advanced Options</h3>
           <div className={styles.switchGroup}>
             {[
               { key: 'isScheduled',      label: 'Scheduled trips only' },
@@ -439,9 +451,9 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           </div>
         </section>
 
-        {/* ─ Created By (Agent) ─ */}
+        {/* â”€ Created By (Agent) â”€ */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>👤 Created By (Agent)</h3>
+          <h3 className={styles.sectionTitle}>ðŸ‘¤ Created By (Agent)</h3>
           <div className={styles.field}>
             <label className={styles.label}>Agent Name / Email</label>
             <input
@@ -452,7 +464,7 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
               onChange={e => onChange(set(f, 'createdByEmail', e.target.value || undefined))}
             />
             <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>
-              Searches: Booking Created By → Enquiry Created By → Created By
+              Searches: Booking Created By â†’ Enquiry Created By â†’ Created By
             </div>
           </div>
           {f.createdByEmail && (
@@ -460,10 +472,10 @@ export default function FilterPanel({ filters, onChange, dataSource }: Props) {
           )}
         </section>
 
-        {/* ─ Reset ─ */}
+        {/* â”€ Reset â”€ */}
         <section className={styles.section} style={{ borderStyle: 'dashed' }}>
           <button className={styles.resetBtn} onClick={() => onChange({})}>
-            🔄 Reset All Filters
+            ðŸ”„ Reset All Filters
           </button>
         </section>
 

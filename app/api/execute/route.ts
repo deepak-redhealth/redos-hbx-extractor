@@ -4,6 +4,7 @@ import { parseNaturalLanguage } from '@/lib/aiParser';
 import { executeRedosQuery } from '@/lib/bigquery';
 import { executeHbxQuery } from '@/lib/snowflake';
 import { verifyAuth } from '@/lib/auth';
+import { resolveSiteIds } from '@/lib/sites';
 
 export async function POST(req: NextRequest) {
   const authError = verifyAuth(req);
@@ -22,6 +23,10 @@ export async function POST(req: NextRequest) {
       aiParsed = await parseNaturalLanguage(naturalLanguageInput);
     }
 
+    
+    if (uiFilters?.siteName?.length) {
+      (uiFilters as any).resolvedSiteIds = await resolveSiteIds(uiFilters.siteName, dataSource);
+    }
     const { sql, selectedColumnDefs, appliedFilters, warnings, isCountQuery } = buildQuery({
       selectedColumns,
       uiFilters: uiFilters || {},
