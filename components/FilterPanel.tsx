@@ -113,7 +113,7 @@ const DATE_PRESETS = [
   { value: 'custom',     label: 'Custom Range' },
 ];
 
-const CITIES = ['Hyderabad', 'Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata', 'Noida', 'Gurugram'];
+const CITIES = ['Hyderabad', 'Kolkata', 'Bangalore', 'Indore', 'Kanpur', 'Delhi', 'Ahmedabad', 'Bhubaneswar', 'Noida', 'Gurugram', 'Chennai', 'Guwahati', 'Mumbai', 'Patna', 'Lucknow', 'Mohali', 'Raipur', 'Faridabad', 'Rourkela', 'Ranchi', 'Ghaziabad', 'Bilaspur', 'Jaipur', 'Nagpur', 'Siliguri', 'Panchkula', 'Visakhapatnam', 'Pune', 'Kannur', 'Gulbarga'];
 const DEPARTMENTS = ['Digital', 'Hospital', 'Field Sales', 'Corporate and Others', 'Test Cases'];
 const CITY_GROUPS = ['DIGITAL', 'CHN', 'DLH-NCR', 'Tri-City', 'MUM'];
 

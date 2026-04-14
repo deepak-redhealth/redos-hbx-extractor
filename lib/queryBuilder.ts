@@ -232,10 +232,37 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
   const cities = uiFilters.city?.length ? uiFilters.city : aiParsed?.filters?.city;
   if (cities?.length) {
     const CITY_CODE_MAP_R: Record<string, string[]> = {
-      hyderabad: ['HYD'], bangalore: ['BLR'], bengaluru: ['BLR'],
-      chennai:   ['CHN', 'MAA'], mumbai: ['BOM', 'MUM'],
-      delhi:     ['DEL', 'NCR'], pune: ['PNQ'], kolkata: ['CCU'],
-      noida:     ['NOI'], gurugram: ['GGN'], gurgaon: ['GGN'],
+      // Tier-1 (highest hospital volume)
+      hyderabad:      ['HYD'],
+      kolkata:        ['KOL', 'Kolkata', 'CCU'],
+      bangalore:      ['BLR'], bengaluru: ['BLR'],
+      indore:         ['IDR', 'Indore'],
+      kanpur:         ['KNP', 'Kanpur'],
+      delhi:          ['DLH', 'DEL', 'NCR'],
+      ahmedabad:      ['AMD', 'Ahmedabad'],
+      bhubaneswar:    ['BBS'],
+      noida:          ['NOI'],
+      gurugram:       ['GGN'], gurgaon: ['GGN'],
+      chennai:        ['CHN', 'Chennai', 'MAA'],
+      guwahati:       ['GHT', 'Guwahati'],
+      mumbai:         ['MUM', 'BOM'],
+      patna:          ['PAT', 'Patna'],
+      lucknow:        ['LCK'],
+      mohali:         ['MOHL'],
+      raipur:         ['RAI', 'Raipur'],
+      faridabad:      ['FDB'],
+      rourkela:       ['ROU'],
+      ranchi:         ['RNC', 'Ranchi'],
+      ghaziabad:      ['GZB'],
+      bilaspur:       ['BSP'],
+      jaipur:         ['JPR'],
+      nagpur:         ['NGP'],
+      siliguri:       ['SGU'],
+      panchkula:      ['PCK'],
+      visakhapatnam:  ['VIZ', 'Visakhapatnam'],
+      pune:           ['PNE', 'PNQ'],
+      kannur:         ['KNNR'],
+      gulbarga:       ['GUL'],
     };
     const cityVals = [...new Set(cities.flatMap((c: string) => {
       const codes = CITY_CODE_MAP_R[c.toLowerCase()];
