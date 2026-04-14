@@ -5,3 +5,17 @@ users.json
 *.pem
 *.key
 tsconfig.tsbuildinfo
+# Local scratch / backups (never commit)
+*.bak
+*.bak-*
+patch_*.ps1
+apply_*.ps1
+fix_*.ps1
+fix_*.js
+fix[0-9]*.js
+fixvehicle.js
+reset_admin.js
+migrate_users.js
+check.js
+vercel_users.txt
+hash.txt
