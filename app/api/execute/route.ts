@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { buildQuery } from '@/lib/queryBuilder';
 import { parseNaturalLanguage } from '@/lib/aiParser';
 import { executeRedosQuery } from '@/lib/bigquery';
@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
     
     if (uiFilters?.siteName?.length) {
       (uiFilters as any).resolvedSiteIds = await resolveSiteIds(uiFilters.siteName, dataSource);
+    console.log('[execute] siteName resolved | dataSource=', dataSource,
+                '| siteName=', uiFilters?.siteName,
+                '| resolvedSiteIds=', (uiFilters as any)?.resolvedSiteIds);
     }
     const { sql, selectedColumnDefs, appliedFilters, warnings, isCountQuery } = buildQuery({
       selectedColumns,
