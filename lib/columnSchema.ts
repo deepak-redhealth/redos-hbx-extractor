@@ -474,6 +474,46 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
   { id: 'wp_dropoff_lng', label: 'Drop-off Longitude', group: 'patient', source: 'redos',
     redosExpr: 'fo.wp_dropoff_long AS dropoff_lng' },
 
+  // --- COMPUTED (always available; not stored, evaluated per row) ---
+  { id: 'city_group', label: 'City Group', group: 'trip', source: 'both',
+    redosExpr: `CASE
+    WHEN fo.is_digital_lead = TRUE                                THEN 'DIGITAL'
+    WHEN fo.city IN ('CHGL','VIPU')                               THEN 'CHN'
+    WHEN fo.city IN ('GGN','GZD','FDB','NOI','DLH')               THEN 'DLH-NCR'
+    WHEN fo.city IN ('MOHL','CDG','PCK')                          THEN 'Tri-City'
+    WHEN fo.city = 'NMB'                                          THEN 'MUM'
+    ELSE fo.city
+  END AS city_group`,
+    hbxExpr: `CASE
+    WHEN UPPER(IFNULL(fo.META_VERTICAL_TYPE_CITY_DIGITAL_SEGG_CREATED,'')) = 'DIGITAL' THEN 'DIGITAL'
+    WHEN fo.META_CITY IN ('CHGL','VIPU')                          THEN 'CHN'
+    WHEN fo.META_CITY IN ('GGN','GZD','FDB','NOI','DLH')          THEN 'DLH-NCR'
+    WHEN fo.META_CITY IN ('MOHL','CDG','PCK')                     THEN 'Tri-City'
+    WHEN fo.META_CITY = 'NMB'                                     THEN 'MUM'
+    ELSE fo.META_CITY
+  END AS city_group`,
+    description: 'City roll-up (NCR, Tri-City, digital-lead override)',
+    defaultSelected: true },
+
+  { id: 'department', label: 'Department', group: 'partner', source: 'redos',
+    redosExpr: `CASE
+    WHEN fo.order_attribution IN ('JSD','WBS','GGL','GGL-O','GGL-P','PTM')
+         AND fo.order_attributed_to_role = 'Call Center Agent'
+         AND c.partnership_type = 'Non-Partner Hospital'           THEN 'Digital'
+    WHEN fo.order_attribution IN ('JSD','WBS','GGL','GGL-O','GGL-P','PTM')
+         AND c.partnership_type = 'Partner Hospital'               THEN 'Hospital'
+    WHEN fo.order_attribution IN ('RED','REDOS','NPH','SBE')
+         OR REGEXP_CONTAINS(IFNULL(fo.order_attribution,''),'AIRCARGO')
+                                                                   THEN 'Hospital'
+    WHEN REGEXP_CONTAINS(IFNULL(fo.order_attribution,''),'REDFS')  THEN 'Field Sales'
+    WHEN IFNULL(fo.order_attribution,'0') = '0'
+         AND NOT REGEXP_CONTAINS(IFNULL(fo.reports_order_source_id,''),'RED')
+         AND IFNULL(fo.reports_order_source_id,'0') != '0'         THEN 'Hospital'
+    WHEN fo.order_attribution = 'TST'                              THEN 'Test Cases'
+    ELSE 'Corporate and Others'
+  END AS department`,
+    description: 'Digital / Hospital / Field Sales / Corporate classification',
+    defaultSelected: true },
 ];
 
 export const COLUMN_GROUPS: Record<string, { label: string; icon: string; color: string }> = {
