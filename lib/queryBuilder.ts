@@ -185,7 +185,16 @@ function buildRedosQuery(input: QueryBuilderInput): BuiltQuery {
     appliedFilters.push('Creation Date: ' + from + ' to ' + to);
     const statuses = uiFilters.status?.length ? uiFilters.status : aiParsed?.filters?.status;
     if (statuses?.length) {
-      conditions.push('fo.oms_order_status IN (' + statuses.map((s: string) => "'" + s + "'").join(', ') + ')');
+      // BQ uses lowercase: fulfilled, cancelled, dispatched, draft
+      // UI shows uppercase: COMPLETED, CANCELLED, DISPATCHED, PENDING
+      const BQ_STATUS_MAP: Record<string, string> = {
+        'COMPLETED': 'fulfilled', 'FULFILLED': 'fulfilled',
+        'CANCELLED': 'cancelled', 'DISPATCHED': 'dispatched',
+        'ASSIGNED': 'dispatched', 'PENDING': 'draft',
+        'REASSIGNED': 'dispatched', 'IN_PROGRESS': 'dispatched',
+      };
+      const bqStatuses = statuses.map((s: string) => BQ_STATUS_MAP[s.toUpperCase()] || s.toLowerCase());
+      conditions.push('fo.oms_order_status IN (' + bqStatuses.map((s: string) => "'" + s + "'").join(', ') + ')');
       appliedFilters.push('Status: ' + statuses.join(', '));
     }
   }

@@ -21,7 +21,8 @@ const DATE_PRESETS = [
 
 const VEHICLE_TYPES = ['als', 'bls', 'hearse', 'neonatal'];
 const OWNERSHIP     = ['own', 'sathi', 'non-sathi', 'alliance'];
-const STATUSES      = ['COMPLETED', 'CANCELLED', 'ASSIGNED', 'DISPATCHED', 'PENDING', 'REASSIGNED'];
+const STATUSES      = ['COMPLETED', 'CANCELLED', 'DISPATCHED', 'PENDING', 'REASSIGNED'];
+// BQ maps: COMPLETED→fulfilled, CANCELLED→cancelled, DISPATCHED→dispatched, PENDING→draft
 const CITIES        = ['Hyderabad', 'Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata', 'Noida', 'Gurugram'];
 
 // Top hospitals/sites from both databases (HBX: og.name | BQ: c.branch_name)

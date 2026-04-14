@@ -1,12 +1,15 @@
 // lib/bigquery.ts — BigQuery (RedOS) connector
-// NO singleton — create fresh client each time to avoid stale cached projectId
+// authorized_user credentials require GOOGLE_CLOUD_PROJECT env var on Vercel
 
 export async function executeRedosQuery(sql: string): Promise<{ rows: Record<string, any>[]; rowCount: number }> {
+  // Force project ID before importing SDK — prevents BLADE detection from Snowflake env vars
+  process.env.GOOGLE_CLOUD_PROJECT = 'redos-prod';
+  process.env.GCLOUD_PROJECT = 'redos-prod';
+
   const { BigQuery } = await import('@google-cloud/bigquery');
-  
   const projectId = 'redos-prod';
   const credBase64 = process.env.BIGQUERY_CREDENTIALS_BASE64;
-  
+
   let client: any;
   if (credBase64) {
     const creds = JSON.parse(Buffer.from(credBase64, 'base64').toString('utf8'));
