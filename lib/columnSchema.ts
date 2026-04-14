@@ -479,7 +479,7 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
     redosExpr: `CASE
     WHEN fo.is_digital_lead = TRUE                                THEN 'DIGITAL'
     WHEN fo.city IN ('CHGL','VIPU')                               THEN 'CHN'
-    WHEN fo.city IN ('GGN','GZD','FDB','NOI','DLH')               THEN 'DLH-NCR'
+    WHEN fo.city IN ('GGN','GZB','FDB','NOI','DLH')               THEN 'DLH-NCR'
     WHEN fo.city IN ('MOHL','CDG','PCK')                          THEN 'Tri-City'
     WHEN fo.city = 'NMB'                                          THEN 'MUM'
     ELSE fo.city
@@ -487,7 +487,7 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
     hbxExpr: `CASE
     WHEN UPPER(IFNULL(fo.META_VERTICAL_TYPE_CITY_DIGITAL_SEGG_CREATED,'')) = 'DIGITAL' THEN 'DIGITAL'
     WHEN fo.META_CITY IN ('CHGL','VIPU')                          THEN 'CHN'
-    WHEN fo.META_CITY IN ('GGN','GZD','FDB','NOI','DLH')          THEN 'DLH-NCR'
+    WHEN fo.META_CITY IN ('GGN','GZB','FDB','NOI','DLH')          THEN 'DLH-NCR'
     WHEN fo.META_CITY IN ('MOHL','CDG','PCK')                     THEN 'Tri-City'
     WHEN fo.META_CITY = 'NMB'                                     THEN 'MUM'
     ELSE fo.META_CITY
