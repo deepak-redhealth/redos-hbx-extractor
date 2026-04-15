@@ -33,15 +33,15 @@ export default function QueryPreview({ sql, appliedFilters, aiParsed, onExecute,
   return (
     <div className={styles.wrap}>
       {/* Filter summary */}
-      {appliedFilters.length > 0 && (
+      {(appliedFilters?.length ?? 0) > 0 && (
         <div className={styles.filterSummary}>
           <h3 className={styles.sumTitle}>Applied Filters</h3>
           <div className={styles.filterTags}>
-            {appliedFilters.map((f, i) => (
+            {appliedFilters?.map((f, i) => (
               <span key={i} className={styles.filterTag}>{f}</span>
             ))}
             {aiParsed && (
-              <span className={styles.aiTag}>✦ AI Enhanced ({Math.round(aiParsed.confidence * 100)}%)</span>
+              <span className={styles.aiTag}>✦ AI Enhanced ({Math.round(aiParsed?.confidence * 100)}%)</span>
             )}
           </div>
         </div>
@@ -91,7 +91,7 @@ export default function QueryPreview({ sql, appliedFilters, aiParsed, onExecute,
         </div>
         <div className={styles.stat}>
           <span className={styles.statLabel}>Filters applied</span>
-          <span className={styles.statVal}>{appliedFilters.length}</span>
+          <span className={styles.statVal}>{(appliedFilters?.length ?? 0)}</span>
         </div>
       </div>
     </div>
