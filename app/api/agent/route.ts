@@ -59,13 +59,13 @@ async function executeTool(name: string, input: any): Promise<string> {
       const { db, table } = input;
       if (db === 'redos') {
         const parts = table.replace(/`/g, '').split('.');
-        const sql = `SELECT column_name, data_type FROM \`${parts[0]}.${parts[1]}.INFORMATION_SCHEMA.COLUMNS\` WHERE table_name = '${parts[2]}' ORDER BY ordinal_position LIMIT 100`;
+        const sql = `SELECT column_name, data_type FROM \`${parts[0]}.${parts[1]}.INFORMATION_SCHEMA.COLUMNS\` WHERE table_name = '${parts[2]}' ORDER BY ordinal_position LIMIT 60`;
         const { rows } = await executeRedosQuery(sql);
         if (!rows.length) return `No columns found for ${table}. Check the table name.`;
         return `Schema for ${table}:\n` + rows.map((r: any) => `  ${r.column_name}: ${r.data_type}`).join('\n');
       } else {
         const parts = table.split('.');
-        const sql = `SELECT COLUMN_NAME, DATA_TYPE FROM ${parts[0]}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '${parts[1]}' AND TABLE_NAME = '${parts[2]}' ORDER BY ORDINAL_POSITION LIMIT 100`;
+        const sql = `SELECT COLUMN_NAME, DATA_TYPE FROM ${parts[0]}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '${parts[1]}' AND TABLE_NAME = '${parts[2]}' ORDER BY ORDINAL_POSITION LIMIT 60`;
         const { rows } = await executeHbxQuery(sql);
         if (!rows.length) return `No columns found for ${table}. Check the table name.`;
         return `Schema for ${table}:\n` + rows.map((r: any) => `  ${r.COLUMN_NAME}: ${r.DATA_TYPE}`).join('\n');
@@ -78,9 +78,9 @@ async function executeTool(name: string, input: any): Promise<string> {
       const executor = db === 'redos' ? executeRedosQuery : executeHbxQuery;
       const { rows, rowCount } = await executor(sql);
       if (!rows.length) return `0 rows returned. Filters may be too narrow or data doesn't exist for this period.\nSQL: ${sql}`;
-      const preview = rows.slice(0, 200);
+      const preview = rows.slice(0, 20);
       const cols = Object.keys(preview[0]);
-      const dataRows = preview.map((r: any) => cols.map(c => String(r[c] ?? '').substring(0, 40)).join(' | ')).join('\n');
+      const dataRows = preview.map((r: any) => cols.map(c => String(r[c] ?? '').substring(0, 25)).join(' | ')).join('\n');
 
       // Deterministic aggregates over ALL rows (not just preview) - prevents LLM arithmetic hallucination
       const fmtINR = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
@@ -98,7 +98,7 @@ async function executeTool(name: string, input: any): Promise<string> {
         ? `=== COMPUTED AGGREGATES (authoritative - use these EXACT values in your response, do NOT recompute) ===\nTotal rows: ${rowCount}\n${aggLines.join('\n')}\n=== END AGGREGATES ===\n\n`
         : '';
 
-      return `${aggBlock}${rowCount} total rows (showing up to 200):\n${cols.join(' | ')}\n${'-'.repeat(60)}\n${dataRows}`;
+      return `${aggBlock}${rowCount} total rows (showing up to 20; use aggregates for totals):\n${cols.join(' | ')}\n${'-'.repeat(60)}\n${dataRows}`;
     }
 
     if (name === 'cross_db_join') {
@@ -112,7 +112,7 @@ async function executeTool(name: string, input: any): Promise<string> {
       }).filter(Boolean);
       if (!joined.length) return `0 matched rows. RedOS: ${redosResult.rowCount} rows, HBX: ${hbxResult.rowCount} rows. Check join keys: ${join_key_redos} ↔ ${join_key_hbx}`;
       const cols = Object.keys(joined[0]);
-      const dataRows = joined.slice(0, 100).map((r: any) => cols.map(c => String((r as any)[c] ?? '').substring(0, 30)).join(' | ')).join('\n');
+      const dataRows = joined.slice(0, 20).map((r: any) => cols.map(c => String((r as any)[c] ?? '').substring(0, 30)).join(' | ')).join('\n');
       return `Matched ${joined.length} rows across both DBs:\n${cols.join(' | ')}\n${dataRows}`;
     }
 
@@ -203,16 +203,16 @@ export async function POST(req: NextRequest) {
     const { question, history = [] } = await req.json();
     if (!question?.trim()) return NextResponse.json({ error: 'Question is required' }, { status: 400 });
 
-    const messages: any[] = [...history, { role: 'user', content: question }];
+    const messages: any[] = [...history.slice(-6), { role: 'user', content: question }];
     const toolsUsed: any[] = [];
     let iterations = 0;
 
-    while (iterations < 10) {
+    while (iterations < 5) {
       iterations++;
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: MODEL, max_tokens: 4096, system: SYSTEM_PROMPT, tools: TOOLS, messages }),
+        body: JSON.stringify({ model: MODEL, max_tokens: 2048, system: SYSTEM_PROMPT, tools: TOOLS, messages }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error.message);
