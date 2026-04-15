@@ -53,7 +53,7 @@ const TOOLS = [
   },
 ];
 
-async function executeTool(name: string, input: any): Promise<string> {
+async function executeTool(name: string, input: any, sqlCalls?: Array<any>): Promise<string> {
   try {
     if (name === 'inspect_schema') {
       const { db, table } = input;
@@ -77,6 +77,7 @@ async function executeTool(name: string, input: any): Promise<string> {
       console.log(`[Agent] ${db.toUpperCase()} query: ${purpose}`);
       const executor = db === 'redos' ? executeRedosQuery : executeHbxQuery;
       const { rows, rowCount } = await executor(sql);
+      sqlCalls?.push({ db, sql, purpose, rowCount });
       if (!rows.length) return `0 rows returned. Filters may be too narrow or data doesn't exist for this period.\nSQL: ${sql}`;
       const preview = rows.slice(0, 20);
       const cols = Object.keys(preview[0]);
@@ -205,6 +206,7 @@ export async function POST(req: NextRequest) {
 
     const messages: any[] = [...history.slice(-6), { role: 'user', content: question }];
     const toolsUsed: any[] = [];
+    const sqlCalls: Array<{db: string; sql: string; purpose: string; rowCount: number}> = [];
     let iterations = 0;
 
     while (iterations < 5) {
@@ -221,14 +223,14 @@ export async function POST(req: NextRequest) {
 
       if (data.stop_reason === 'end_turn') {
         const answer = data.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n');
-        return NextResponse.json({ answer, toolsUsed, iterations });
+        return NextResponse.json({ answer, toolsUsed, sqlCalls, iterations });
       }
 
       if (data.stop_reason === 'tool_use') {
         const toolResults: any[] = [];
         for (const block of data.content.filter((b: any) => b.type === 'tool_use')) {
           toolsUsed.push({ tool: block.name, purpose: block.input.purpose, db: block.input.db });
-          const result = await executeTool(block.name, block.input);
+          const result = await executeTool(block.name, block.input, sqlCalls);
           toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result });
         }
         messages.push({ role: 'user', content: toolResults });
