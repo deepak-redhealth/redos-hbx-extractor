@@ -6,10 +6,10 @@ import styles from './QueryPreview.module.css';
 
 interface Props {
   sql: string;
-  appliedFilters: string[];
-  aiParsed: any;
-  onExecute: () => void;
-  loading: boolean;
+  appliedFilters?: string[];
+  aiParsed?: any;
+  onExecute?: () => void;
+  loading?: boolean;
 }
 
 export default function QueryPreview({ sql, appliedFilters, aiParsed, onExecute, loading }: Props) {
