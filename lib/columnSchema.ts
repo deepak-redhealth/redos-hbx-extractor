@@ -366,12 +366,14 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
   { id: 'is_emergency', label: 'Is Emergency Case', group: 'patient', source: 'redos',
     redosExpr: 'fo.is_emergency_case AS is_emergency' },
 
-  { id: 'pickup_address', label: 'Pickup Address', group: 'patient', source: 'redos',
+  { id: 'pickup_address', label: 'Pickup Address', group: 'patient', source: 'both',
     redosExpr: 'fo.wp_pickup_address_location AS pickup_address',
+    hbxExpr: "CONCAT_WS(', ', fo.ASSIGNMENT_WAYPOINTS_DATA[0]:address:addressLine1::STRING, fo.ASSIGNMENT_WAYPOINTS_DATA[0]:address:addressLine2::STRING, fo.ASSIGNMENT_WAYPOINTS_DATA[0]:address:city::STRING, fo.ASSIGNMENT_WAYPOINTS_DATA[0]:address:state::STRING, fo.ASSIGNMENT_WAYPOINTS_DATA[0]:address:zip::STRING) AS pickup_address",
     description: 'Full pickup address' },
 
-  { id: 'dropoff_address', label: 'Drop-off Address', group: 'patient', source: 'redos',
+  { id: 'dropoff_address', label: 'Drop-off Address', group: 'patient', source: 'both',
     redosExpr: 'fo.wp_dropoff_address_location AS dropoff_address',
+    hbxExpr: "CONCAT_WS(', ', fo.ASSIGNMENT_WAYPOINTS_DATA[1]:address:addressLine1::STRING, fo.ASSIGNMENT_WAYPOINTS_DATA[1]:address:addressLine2::STRING) AS dropoff_address",
     description: 'Full drop-off / destination address' },
 
   { id: 'dropoff_entity', label: 'Drop-off Hospital / Entity', group: 'patient', source: 'redos',
