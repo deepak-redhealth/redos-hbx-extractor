@@ -413,6 +413,12 @@ function buildHbxQuery(input: QueryBuilderInput): BuiltQuery {
     }
   } else {
     appliedFilters.push('Finance Drop Date: ' + from + ' to ' + to);
+    const statuses = uiFilters.status?.length ? uiFilters.status : aiParsed?.filters?.status;
+    if (statuses?.length) {
+      const hbxStatuses = [...new Set(statuses.map((s: string) => s.toUpperCase()))];
+      baseConditions.push('fo.META_ORDER_STATUS IN (' + hbxStatuses.map((s: string) => "'" + s + "'").join(', ') + ')');
+      appliedFilters.push('Status: ' + statuses.join(', '));
+    }
   }
 
   const orderClassHbx = uiFilters.orderClassification?.length ? uiFilters.orderClassification : (aiParsed?.filters as any)?.orderClassification;
