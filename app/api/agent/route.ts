@@ -53,19 +53,19 @@ const TOOLS = [
   },
 ];
 
-async function executeTool(name: string, input: any, sqlCalls?: Array<any>): Promise<string> {
+async function executeTool(name: string, input: any): Promise<string> {
   try {
     if (name === 'inspect_schema') {
       const { db, table } = input;
       if (db === 'redos') {
         const parts = table.replace(/`/g, '').split('.');
-        const sql = `SELECT column_name, data_type FROM \`${parts[0]}.${parts[1]}.INFORMATION_SCHEMA.COLUMNS\` WHERE table_name = '${parts[2]}' ORDER BY ordinal_position LIMIT 60`;
+        const sql = `SELECT column_name, data_type FROM \`${parts[0]}.${parts[1]}.INFORMATION_SCHEMA.COLUMNS\` WHERE table_name = '${parts[2]}' ORDER BY ordinal_position LIMIT 100`;
         const { rows } = await executeRedosQuery(sql);
         if (!rows.length) return `No columns found for ${table}. Check the table name.`;
         return `Schema for ${table}:\n` + rows.map((r: any) => `  ${r.column_name}: ${r.data_type}`).join('\n');
       } else {
         const parts = table.split('.');
-        const sql = `SELECT COLUMN_NAME, DATA_TYPE FROM ${parts[0]}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '${parts[1]}' AND TABLE_NAME = '${parts[2]}' ORDER BY ORDINAL_POSITION LIMIT 60`;
+        const sql = `SELECT COLUMN_NAME, DATA_TYPE FROM ${parts[0]}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '${parts[1]}' AND TABLE_NAME = '${parts[2]}' ORDER BY ORDINAL_POSITION LIMIT 100`;
         const { rows } = await executeHbxQuery(sql);
         if (!rows.length) return `No columns found for ${table}. Check the table name.`;
         return `Schema for ${table}:\n` + rows.map((r: any) => `  ${r.COLUMN_NAME}: ${r.DATA_TYPE}`).join('\n');
@@ -77,29 +77,11 @@ async function executeTool(name: string, input: any, sqlCalls?: Array<any>): Pro
       console.log(`[Agent] ${db.toUpperCase()} query: ${purpose}`);
       const executor = db === 'redos' ? executeRedosQuery : executeHbxQuery;
       const { rows, rowCount } = await executor(sql);
-      sqlCalls?.push({ db, sql, purpose, rowCount });
       if (!rows.length) return `0 rows returned. Filters may be too narrow or data doesn't exist for this period.\nSQL: ${sql}`;
-      const preview = rows.slice(0, 20);
+      const preview = rows.slice(0, 200);
       const cols = Object.keys(preview[0]);
-      const dataRows = preview.map((r: any) => cols.map(c => String(r[c] ?? '').substring(0, 25)).join(' | ')).join('\n');
-
-      // Deterministic aggregates over ALL rows (not just preview) - prevents LLM arithmetic hallucination
-      const fmtINR = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
-      const aggLines: string[] = [];
-      for (const col of cols) {
-        const vals = rows.map((r: any) => r[col]).filter((v: any) => v !== null && v !== undefined && v !== '' && !isNaN(Number(v))).map((v: any) => Number(v));
-        if (vals.length < Math.max(1, Math.floor(rows.length * 0.5))) continue; // skip cols that aren't mostly numeric
-        const sum = vals.reduce((a: number, b: number) => a + b, 0);
-        const avg = sum / vals.length;
-        const min = Math.min(...vals);
-        const max = Math.max(...vals);
-        aggLines.push(`  ${col}: sum=${fmtINR(sum)} | avg=${fmtINR(avg)} | min=${fmtINR(min)} | max=${fmtINR(max)} | n=${vals.length}`);
-      }
-      const aggBlock = aggLines.length
-        ? `=== COMPUTED AGGREGATES (authoritative - use these EXACT values in your response, do NOT recompute) ===\nTotal rows: ${rowCount}\n${aggLines.join('\n')}\n=== END AGGREGATES ===\n\n`
-        : '';
-
-      return `${aggBlock}${rowCount} total rows (showing up to 20; use aggregates for totals):\n${cols.join(' | ')}\n${'-'.repeat(60)}\n${dataRows}`;
+      const dataRows = preview.map((r: any) => cols.map(c => String(r[c] ?? '').substring(0, 40)).join(' | ')).join('\n');
+      return `${rowCount} total rows (showing up to 200):\n${cols.join(' | ')}\n${'-'.repeat(60)}\n${dataRows}`;
     }
 
     if (name === 'cross_db_join') {
@@ -113,7 +95,7 @@ async function executeTool(name: string, input: any, sqlCalls?: Array<any>): Pro
       }).filter(Boolean);
       if (!joined.length) return `0 matched rows. RedOS: ${redosResult.rowCount} rows, HBX: ${hbxResult.rowCount} rows. Check join keys: ${join_key_redos} ↔ ${join_key_hbx}`;
       const cols = Object.keys(joined[0]);
-      const dataRows = joined.slice(0, 20).map((r: any) => cols.map(c => String((r as any)[c] ?? '').substring(0, 30)).join(' | ')).join('\n');
+      const dataRows = joined.slice(0, 100).map((r: any) => cols.map(c => String((r as any)[c] ?? '').substring(0, 30)).join(' | ')).join('\n');
       return `Matched ${joined.length} rows across both DBs:\n${cols.join(' | ')}\n${dataRows}`;
     }
 
@@ -185,36 +167,26 @@ WORKFLOW:
 6. Summarize findings clearly with numbers
 7. Suggest a useful follow-up question
 
-Always be direct. Lead with the answer, then the data.
-
-CRITICAL - NUMERIC CORRECTNESS:
-When a run_sql result includes a "=== COMPUTED AGGREGATES ===" block, those numbers are authoritative.
-- Use them VERBATIM in your response - do not recompute, round, or re-derive.
-- If the user asks for a total/sum/average, read it directly from the aggregates block.
-- Never perform arithmetic on the displayed row preview - the preview is truncated to 200 rows; the aggregates block covers all rows.
-- Format rupees by prepending the rune character (U+20B9) and the digit string from the aggregates.
-- If you need a total that is not in the aggregates block (e.g. a sum filtered to a subset), issue another run_sql with SUM(...) rather than adding numbers yourself.
-Violating this rule causes silent data corruption. The aggregates block is the single source of truth.`;
+Always be direct. Lead with the answer, then the data.`;
 
 export async function POST(req: NextRequest) {
   const authError = verifyAuth(req);
-  if (authError) return authError;
+  if (authError) return NextResponse.json({ error: 'Session expired. Please log in again.' }, { status: 401 });
 
   try {
     const { question, history = [] } = await req.json();
     if (!question?.trim()) return NextResponse.json({ error: 'Question is required' }, { status: 400 });
 
-    const messages: any[] = [...history.slice(-6), { role: 'user', content: question }];
+    const messages: any[] = [...history, { role: 'user', content: question }];
     const toolsUsed: any[] = [];
-    const sqlCalls: Array<{db: string; sql: string; purpose: string; rowCount: number}> = [];
     let iterations = 0;
 
-    while (iterations < 5) {
+    while (iterations < 10) {
       iterations++;
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: MODEL, max_tokens: 2048, system: SYSTEM_PROMPT, tools: TOOLS, messages }),
+        body: JSON.stringify({ model: MODEL, max_tokens: 4096, system: SYSTEM_PROMPT, tools: TOOLS, messages }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error.message);
@@ -223,14 +195,14 @@ export async function POST(req: NextRequest) {
 
       if (data.stop_reason === 'end_turn') {
         const answer = data.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n');
-        return NextResponse.json({ answer, toolsUsed, sqlCalls, iterations });
+        return NextResponse.json({ answer, toolsUsed, iterations });
       }
 
       if (data.stop_reason === 'tool_use') {
         const toolResults: any[] = [];
         for (const block of data.content.filter((b: any) => b.type === 'tool_use')) {
           toolsUsed.push({ tool: block.name, purpose: block.input.purpose, db: block.input.db });
-          const result = await executeTool(block.name, block.input, sqlCalls);
+          const result = await executeTool(block.name, block.input);
           toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result });
         }
         messages.push({ role: 'user', content: toolResults });

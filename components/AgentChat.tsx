@@ -3,15 +3,13 @@
 
 import { useState, useRef, useEffect } from 'react';
 import styles from './AgentChat.module.css';
-import QueryPreview from './QueryPreview';
 
 interface Message {
   role: 'user' | 'agent';
   content: string;
   toolsUsed?: { tool: string; purpose: string; db?: string }[];
   iterations?: number;
-    sqlCalls?: { db: string; sql: string; purpose: string; rowCount: number }[];
-loading?: boolean;
+  loading?: boolean;
 }
 
 interface Props { token: string; }
@@ -51,10 +49,16 @@ export default function AgentChat({ token }: Props) {
     try {
       const res = await fetch('/api/agent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({ question: q, history }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+        return;
+      }
       if (!res.ok) throw new Error(data.error);
 
       const agentMsg: Message = {
@@ -62,7 +66,6 @@ export default function AgentChat({ token }: Props) {
         content: data.answer,
         toolsUsed: data.toolsUsed,
         iterations: data.iterations,
-        sqlCalls: data.sqlCalls,
       };
 
       // Update history for multi-turn
@@ -148,20 +151,6 @@ export default function AgentChat({ token }: Props) {
                         className={styles.answerText}
                         dangerouslySetInnerHTML={{ __html: formatAnswer(msg.content) }}
                       />
-                      {msg.sqlCalls && msg.sqlCalls.length > 0 && (
-                        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {msg.sqlCalls.map((call, ci) => (
-                            <details key={ci} style={{ border: '1px solid #2a2a3a', borderRadius: 8, background: '#0f0f17' }}>
-                              <summary style={{ cursor: 'pointer', padding: '8px 12px', fontSize: 12, color: '#9aa0b4', userSelect: 'none' }}>
-                                SQL #{ci + 1} · <strong style={{ color: call.db === 'redos' ? '#4a9eff' : '#29b5e8' }}>{call.db.toUpperCase()}</strong> · {call.purpose} · {call.rowCount} rows
-                              </summary>
-                              <div style={{ padding: 8 }}>
-                                <QueryPreview sql={call.sql} />
-                              </div>
-                            </details>
-                          ))}
-                        </div>
-                      )}
                       {msg.toolsUsed && msg.toolsUsed.length > 0 && (
                         <div className={styles.toolsUsed}>
                           <span className={styles.toolsLabel}>Tools used:</span>
