@@ -1,3 +1,4 @@
+// admin route v2 - fixed GET handler
 // app/api/auth/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
@@ -98,3 +99,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Auth failed: ' + err.message }, { status: 500 });
   }
 }
+
