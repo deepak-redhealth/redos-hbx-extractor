@@ -283,8 +283,8 @@ export const COLUMN_SCHEMA: ColumnDef[] = [
     redosExpr: "STRING_AGG(COALESCE(JSON_VALUE(p.comment), ''), ', ') AS price_override_comments",
     description: 'Requires paymentUpdationDetails unnest CTE' },
 
-  { id: 'reports_order_source_name', label: 'Order Source Name', group: 'trip', source: 'redos',
-    redosExpr: 'fo.reports_order_source_name AS reports_order_source_name',
+  { id: 'order_source_name', label: 'Order Source Name', group: 'trip', source: 'redos',
+    redosExpr: 'fo.order_source_name AS order_source_name',
     description: 'Hospital/source name as per reports' },
 
   { id: 'order_source_platform', label: 'Source Platform', group: 'trip', source: 'redos',
